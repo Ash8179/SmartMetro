@@ -144,51 +144,52 @@ struct StationRow: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // 主信息行（保持不变）
-            HStack(alignment: .center) {
-                HStack(spacing: 6) {
-                    ForEach(stationLines, id: \.self) { lineNumber in
-                        if let config = lineConfig[lineNumber] {
-                            Text(config.name)
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 32, height: 32)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(config.color)
-                                )
-                        }
-                    }
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(station.nameCN)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 20, weight: .semibold))
                     Text(station.nameEN)
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                 }
                 
                 Spacer()
-                
-                Text("\(station.distanceM)m")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.secondary)
+
+                VStack(alignment: .trailing) {
+                    HStack(spacing: 6) {
+                        ForEach(stationLines, id: \.self) { lineNumber in
+                            if let config = lineConfig[lineNumber] {
+                                Text(config.name)
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 32, height: 32)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(config.color)
+                                    )
+                            }
+                        }
+                    }
+                    
+                    Text("\(station.distanceM)m") 
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 1) // 添加间距为1
+                }
             }
             
-            // 修改后的线路详情部分
+            // 线路站点信息
             if showLineStations, let firstLine = stationLines.first {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("\(lineConfig[firstLine]?.name ?? "")号线全程站点")
                         .font(.subheadline)
                         .foregroundColor(.gray)
                     
-                    // 关键修改点：显式类型标注和颜色计算
                     FlexibleView(
                         data: station.lineInfo.allStations,
                         spacing: 8,
                         alignment: .leading
-                    ) { stationName -> Text in
+                    ) { stationName in
                         let bgColor = lineConfig[firstLine]?.bgColor ?? Color.gray
                         return Text(stationName)
                             .font(.caption)
@@ -197,7 +198,7 @@ struct StationRow: View {
                             .background(
                                 RoundedRectangle(cornerRadius: 4)
                                     .fill(bgColor.opacity(0.3))
-                            ) as! Text
+                            )
                     }
                 }
                 .transition(.opacity)
@@ -212,7 +213,7 @@ struct StationRow: View {
     }
 }
 
-// MARK: -
+// MARK: - test
 struct StationRow_Previews: PreviewProvider {
     static var transferStation: MetroStation = MetroStation(
         id: 1062,
