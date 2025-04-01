@@ -7,24 +7,20 @@ struct ContentView: View {
     @State private var isLoading: Bool
     @State private var errorMessage: String?
     @State private var showingTransferQuery = false
-    
+    @State private var showingLineQuery = false // 新增状态变量
+
     init(stations: [MetroStation] = [], isLoading: Bool = false, errorMessage: String? = nil) {
         _stations = State(initialValue: stations)
         _isLoading = State(initialValue: isLoading)
         _errorMessage = State(initialValue: errorMessage)
     }
-    
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 6) { // 增加整体间距
-               // Spacer().frame(height: 6) // 先不加了
-                
-                Divider() // 增加分隔线
-                
-                buttonSection // 按钮区域
-                
-                Divider() // 增加分隔线
-                
+            VStack(spacing: 6) {
+                Divider()
+                buttonSection
+                Divider()
                 mainContentView
             }
             .navigationTitle("上海地铁")
@@ -37,17 +33,19 @@ struct ContentView: View {
         .sheet(isPresented: $showingTransferQuery) {
             TransferQueryView()
         }
-    }
-    
-    private var buttonSection: some View {
-        HStack(spacing: 20) { // 预留间距，方便后续加入更多按钮
-            transferQueryButton
-            
-            // 未来可以在这里加入更多按钮
+        .sheet(isPresented: $showingLineQuery) { // 新增线路查询视图
+            StationQuery()
         }
-        .padding(.vertical, 10) // 让按钮区域更突出
     }
-    
+
+    private var buttonSection: some View {
+        HStack(spacing: 20) {
+            transferQueryButton
+            lineQueryButton // 添加新按钮
+        }
+        .padding(.vertical, 10)
+    }
+
     private var transferQueryButton: some View {
         Button(action: {
             showingTransferQuery = true
@@ -64,7 +62,24 @@ struct ContentView: View {
             .cornerRadius(10)
         }
     }
-    
+
+    private var lineQueryButton: some View { // 线路查询按钮
+        Button(action: {
+            showingLineQuery = true
+        }) {
+            HStack(spacing: 4) {
+                Text("线路查询")
+                Text("🗺️")
+            }
+            .font(.headline)
+            .foregroundColor(.blue)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 15)
+            .background(Color(.systemGray6))
+            .cornerRadius(10)
+        }
+    }
+
     @ViewBuilder
     private var mainContentView: some View {
         if isLoading {
@@ -77,7 +92,7 @@ struct ContentView: View {
             stationList
         }
     }
-    
+
     private var stationList: some View {
         List(stations.prefix(5)) { station in
             StationRow(station: station)
@@ -87,7 +102,7 @@ struct ContentView: View {
             await loadData()
         }
     }
-    
+
     private func errorView(message: String) -> some View {
         ContentUnavailableView(
             label: { Label("Fail to load", systemImage: "wifi.exclamationmark") },
@@ -101,30 +116,30 @@ struct ContentView: View {
             }
         )
     }
-    
+
     private var emptyView: some View {
         ContentUnavailableView(
             label: { Label("No Metro Station Found", systemImage: "tram.fill") },
             description: { Text("No metro stations within 5 kilometers.") }
         )
     }
-    
+
     private func loadData() async {
         guard let location = locationManager.location else {
             errorMessage = "Location service required."
             return
         }
-        
+
         isLoading = true
         defer { isLoading = false }
-        
+
         let latitude = location.latitude
         let longitude = location.longitude
-        
+
         do {
             let url = URL(string: "http://127.0.0.1:5002/nearest_stations?lat=\(latitude)&lng=\(longitude)")!
             let (data, _) = try await URLSession.shared.data(from: url)
-            
+
             let decoder = JSONDecoder()
             let response = try decoder.decode(StationResponse.self, from: data)
             stations = response.nearestStations
@@ -220,6 +235,4 @@ struct ContentView_Previews: PreviewProvider {
         }
         .previewLayout(.sizeThatFits)
     }
-}
-
 }
