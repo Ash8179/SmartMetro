@@ -6,6 +6,7 @@ struct ContentView: View {
     @State private var stations: [MetroStation]
     @State private var isLoading: Bool
     @State private var errorMessage: String?
+    @State private var showingTransferQuery = false
     
     init(stations: [MetroStation] = [], isLoading: Bool = false, errorMessage: String? = nil) {
         _stations = State(initialValue: stations)
@@ -15,13 +16,52 @@ struct ContentView: View {
     
     var body: some View {
         NavigationStack {
-            mainContentView
-                .navigationTitle("🚇上海地铁🚇")
-                .task {
-                    if stations.isEmpty && errorMessage == nil {
-                        await loadData()
-                    }
+            VStack(spacing: 6) { // 增加整体间距
+               // Spacer().frame(height: 6) // 先不加了
+                
+                Divider() // 增加分隔线
+                
+                buttonSection // 按钮区域
+                
+                Divider() // 增加分隔线
+                
+                mainContentView
+            }
+            .navigationTitle("上海地铁")
+            .task {
+                if stations.isEmpty && errorMessage == nil {
+                    await loadData()
                 }
+            }
+        }
+        .sheet(isPresented: $showingTransferQuery) {
+            TransferQueryView()
+        }
+    }
+    
+    private var buttonSection: some View {
+        HStack(spacing: 20) { // 预留间距，方便后续加入更多按钮
+            transferQueryButton
+            
+            // 未来可以在这里加入更多按钮
+        }
+        .padding(.vertical, 10) // 让按钮区域更突出
+    }
+    
+    private var transferQueryButton: some View {
+        Button(action: {
+            showingTransferQuery = true
+        }) {
+            HStack(spacing: 4) {
+                Text("换乘查询")
+                Text("🚆")
+            }
+            .font(.headline)
+            .foregroundColor(.blue)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 15)
+            .background(Color(.systemGray6))
+            .cornerRadius(10)
         }
     }
     
@@ -74,21 +114,16 @@ struct ContentView: View {
             errorMessage = "Location service required."
             return
         }
-
+        
         isLoading = true
         defer { isLoading = false }
-
+        
         let latitude = location.latitude
         let longitude = location.longitude
-
+        
         do {
-            let url = URL(string: "http://127.0.0.1:5001/nearest_stations?lat=\(latitude)&lng=\(longitude)")!
+            let url = URL(string: "http://127.0.0.1:5002/nearest_stations?lat=\(latitude)&lng=\(longitude)")!
             let (data, _) = try await URLSession.shared.data(from: url)
-            
-            // 打印原始响应用于调试
-            if let rawJSON = String(data: data, encoding: .utf8) {
-                print("Raw API Response:\n\(rawJSON)")
-            }
             
             let decoder = JSONDecoder()
             let response = try decoder.decode(StationResponse.self, from: data)
@@ -104,9 +139,9 @@ struct ContentView: View {
             errorMessage = "Unknown Error: \(error.localizedDescription)"
         }
     }
-    
-    
 }
+
+
 
 // MARK: - 预览提供器
 struct ContentView_Previews: PreviewProvider {
@@ -129,7 +164,7 @@ struct ContentView_Previews: PreviewProvider {
                 stations: [
                     MetroStation(
                         id: 1,
-                        nameCN: "你。。。。",
+                        nameCN: "同济大学",
                         nameEN: "Tongji University",
                         travelGroup: "244",
                         distanceM: 250,
@@ -138,7 +173,7 @@ struct ContentView_Previews: PreviewProvider {
                     ),
                     MetroStation(
                         id: 2,
-                        nameCN: "呵呵",
+                        nameCN: "四平路",
                         nameEN: "Siping Road",
                         travelGroup: "189",
                         distanceM: 560,
@@ -185,4 +220,6 @@ struct ContentView_Previews: PreviewProvider {
         }
         .previewLayout(.sizeThatFits)
     }
+}
+
 }
