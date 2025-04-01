@@ -114,7 +114,7 @@ struct StationRow: View {
     let station: MetroStation
     @State private var showLineStations = false
     
-    // 线路配置（保持不变）
+    // 线路配置
     private let lineConfig: [Int: (color: Color, bgColor: Color, name: String)] = [
         1: (Color(hex: "e3002b"), Color(hex: "fdeae9"), "1"),
         2: (Color(hex: "8cc220"), Color(hex: "EBF7EC"), "2"),
@@ -145,6 +145,7 @@ struct StationRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
+                // 站点名称（靠左）
                 VStack(alignment: .leading, spacing: 6) {
                     Text(station.nameCN)
                         .font(.system(size: 20, weight: .semibold))
@@ -155,6 +156,7 @@ struct StationRow: View {
                 
                 Spacer()
 
+                // 线路信息 + 站点距离（上下排列，间距 6）
                 VStack(alignment: .trailing) {
                     HStack(spacing: 6) {
                         ForEach(stationLines, id: \.self) { lineNumber in
@@ -171,45 +173,14 @@ struct StationRow: View {
                         }
                     }
                     
-                    Text("\(station.distanceM)m") 
+                    Text("\(station.distanceM)m") // 站点距离
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
-                        .padding(.top, 1) // 添加间距为1
+                        .padding(.top, 1) // 控制间距为 6
                 }
-            }
-            
-            // 线路站点信息
-            if showLineStations, let firstLine = stationLines.first {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("\(lineConfig[firstLine]?.name ?? "")号线全程站点")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                    
-                    FlexibleView(
-                        data: station.lineInfo.allStations,
-                        spacing: 8,
-                        alignment: .leading
-                    ) { stationName in
-                        let bgColor = lineConfig[firstLine]?.bgColor ?? Color.gray
-                        return Text(stationName)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(bgColor.opacity(0.3))
-                            )
-                    }
-                }
-                .transition(.opacity)
             }
         }
         .padding(.vertical, 12)
-        .onTapGesture {
-            withAnimation(.spring()) {
-                showLineStations.toggle()
-            }
-        }
     }
 }
 
@@ -254,3 +225,4 @@ struct StationRow_Previews: PreviewProvider {
         .padding()
     }
 }
+
