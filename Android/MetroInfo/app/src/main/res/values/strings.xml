@@ -1,7 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">MetroInfo</string>
+    <string name="app_name">SmartMetro</string>
     <string name="arrival_time">到达时间查询</string>
     <string name="search_station">搜索站点</string>
     <string name="error_loading_stations">加载站点失败</string>
     <string name="station_detail">站点详情</string>
+    <string name="route_details">路线详情</string>
+    <string name="total_time">总时间: %1$d分钟</string>
+    <string name="transfer_count">换乘次数: %1$d</string>
+    <string name="error_getting_route">获取路线失败</string>
 </resources>

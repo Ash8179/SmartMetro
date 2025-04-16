@@ -2,8 +2,9 @@ package com.example.metroinfo.ui.arrival
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.metroinfo.model.Line
+import com.example.metroinfo.model.ArrivalInfo
 import com.example.metroinfo.model.ArrivalTimeInfo
+import com.example.metroinfo.model.Line
 import com.example.metroinfo.repository.MetroRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,8 +25,8 @@ class ArrivalTimeViewModel @Inject constructor(
     private val _stations = MutableStateFlow<List<ArrivalTimeInfo>>(emptyList())
     val stations: StateFlow<List<ArrivalTimeInfo>> = _stations.asStateFlow()
 
-    private val _arrivalInfo = MutableStateFlow<ArrivalTimeInfo?>(null)
-    val arrivalInfo: StateFlow<ArrivalTimeInfo?> = _arrivalInfo.asStateFlow()
+    private val _arrivalInfo = MutableStateFlow<List<ArrivalInfo>>(emptyList())
+    val arrivalInfo: StateFlow<List<ArrivalInfo>> = _arrivalInfo.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -41,8 +42,12 @@ class ArrivalTimeViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val lines = repository.getLines()
-                _lines.value = lines
+                val response = repository.getLines()
+                if (response.isSuccessful) {
+                    _lines.value = response.body() ?: emptyList()
+                } else {
+                    _error.value = "加载线路失败"
+                }
             } catch (e: Exception) {
                 Timber.e(e, "加载线路失败")
                 _error.value = "加载线路失败"
@@ -56,8 +61,12 @@ class ArrivalTimeViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val stations = repository.getLineStationsWithArrivalTime(lineId)
-                _stations.value = stations
+                val response = repository.getLineStationsArrivalTime(lineId)
+                if (response.isSuccessful) {
+                    _stations.value = response.body() ?: emptyList()
+                } else {
+                    _error.value = "加载站点失败"
+                }
             } catch (e: Exception) {
                 Timber.e(e, "加载站点失败")
                 _error.value = "加载站点失败"
@@ -72,8 +81,12 @@ class ArrivalTimeViewModel @Inject constructor(
             try {
                 _isLoading.value = true
                 _error.value = null
-                val stations = repository.searchStationsWithArrivalTime(query)
-                _stations.value = stations
+                val response = repository.searchStations(query)
+                if (response.isSuccessful) {
+                    _stations.value = response.body() ?: emptyList()
+                } else {
+                    _error.value = "搜索站点失败"
+                }
             } catch (e: Exception) {
                 Timber.e(e, "搜索站点失败")
                 _error.value = "搜索站点失败"
@@ -88,11 +101,28 @@ class ArrivalTimeViewModel @Inject constructor(
             try {
                 _isLoading.value = true
                 _error.value = null
-                val info = repository.getStationArrivalTimeDetails(stationId.toString())
-                _arrivalInfo.value = info.firstOrNull()
+                val response = repository.getStationArrivalTimeDetails(stationId.toString())
+                if (response.isSuccessful) {
+                    val arrivalTimeInfoList = response.body() ?: emptyList()
+                    _arrivalInfo.value = arrivalTimeInfoList.map { arrivalTimeInfo ->
+                        ArrivalInfo(
+                            lineId = arrivalTimeInfo.lineId,
+                            stationId = arrivalTimeInfo.stationId,
+                            stationName = arrivalTimeInfo.stationName,
+                            directionDesc = arrivalTimeInfo.directionDesc,
+                            firstArrivalTime = arrivalTimeInfo.firstArrivalTime,
+                            nextArrivalTime = "",
+                            minutesRemaining = arrivalTimeInfo.minutesRemaining,
+                            lineName = arrivalTimeInfo.lineName,
+                            arrivalTime = arrivalTimeInfo.firstArrivalTime
+                        )
+                    }
+                } else {
+                    _error.value = "获取站点到站信息失败"
+                }
             } catch (e: Exception) {
-                Timber.e(e, "获取到站信息失败")
-                _error.value = "获取到站信息失败"
+                Timber.e(e, "获取站点到站信息失败")
+                _error.value = "获取站点到站信息失败"
             } finally {
                 _isLoading.value = false
             }

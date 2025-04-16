@@ -16,8 +16,25 @@
             app:navigationIcon="@drawable/ic_back"
             app:titleTextColor="@android:color/white">
 
+            <TextView
+                android:id="@+id/tvLineName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:textColor="@android:color/white"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/tvLineNameEn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="8dp"
+                android:textColor="@android:color/white"
+                android:textSize="14sp" />
+
             <View
-                android:id="@+id/lineColorView"
+                android:id="@+id/tvLineColor"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_gravity="center_vertical"
@@ -34,13 +51,30 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/stationsRecyclerView"
+            android:id="@+id/rvStations"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:padding="8dp" />
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRoute"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:text="路线规划" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnArrivalTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="到达时间" />
 
     <ProgressBar
         android:id="@+id/progressBar"

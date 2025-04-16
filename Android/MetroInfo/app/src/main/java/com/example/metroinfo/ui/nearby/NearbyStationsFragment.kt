@@ -25,7 +25,7 @@ class NearbyStationsFragment : Fragment(R.layout.fragment_nearby_stations) {
     private val binding by viewBinding(FragmentNearbyStationsBinding::bind)
     private val viewModel: NearbyStationsViewModel by viewModels()
     
-    private val stationsAdapter = NearbyStationsAdapter { station ->
+    private val stationsAdapter = NearbyStationsAdapter { _ ->
         // TODO: 处理站点点击事件
     }
 

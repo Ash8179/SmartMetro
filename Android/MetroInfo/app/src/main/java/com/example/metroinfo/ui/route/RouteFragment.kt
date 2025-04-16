@@ -6,19 +6,21 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.metroinfo.databinding.FragmentRouteBinding
-import com.example.metroinfo.ui.adapter.RouteAdapter
+import com.example.metroinfo.model.PathSegment
+import com.example.metroinfo.viewmodel.RouteViewModel
+import com.example.metroinfo.ui.route.adapter.RouteStepAdapter
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class RouteFragment : Fragment() {
-
     private var _binding: FragmentRouteBinding? = null
     private val binding get() = _binding!!
-
     private val viewModel: RouteViewModel by viewModels()
-    private lateinit var routeAdapter: RouteAdapter
+    private lateinit var routeStepAdapter: RouteStepAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -37,42 +39,59 @@ class RouteFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        routeAdapter = RouteAdapter()
-        binding.routeRecyclerView.apply {
-            adapter = routeAdapter
+        routeStepAdapter = RouteStepAdapter()
+        binding.rvRouteSegments.apply {
             layoutManager = LinearLayoutManager(context)
+            adapter = routeStepAdapter
         }
     }
 
     private fun setupClickListeners() {
-        binding.searchButton.setOnClickListener {
-            val startStation = binding.startStationInput.text.toString()
-            val endStation = binding.endStationInput.text.toString()
-            if (startStation.isNotEmpty() && endStation.isNotEmpty()) {
-                viewModel.findRoute(startStation, endStation)
-            }
+        binding.btnSearch.setOnClickListener {
+            findRoute()
+        }
+    }
+
+    private fun findRoute() {
+        val fromStation = binding.etFromStation.text.toString()
+        val toStation = binding.etToStation.text.toString()
+        
+        if (fromStation.isNotEmpty() && toStation.isNotEmpty()) {
+            // 清除之前的数据
+            binding.routeSummary.root.visibility = View.GONE
+            binding.tvError.visibility = View.GONE
+            routeStepAdapter.submitList(emptyList())
+            
+            viewModel.findRoute(fromStation, toStation)
         }
     }
 
     private fun observeViewModel() {
-        viewModel.routeInfo.observe(viewLifecycleOwner) { routeInfo ->
-            routeInfo?.let {
-                binding.routeSummaryCard.visibility = View.VISIBLE
-                binding.totalTimeText.text = "总时间: ${it.totalTime}分钟"
-                binding.transferCountText.text = "换乘: ${it.transferCount}次"
-                routeAdapter.submitList(it.segments)
+        viewModel.routeData.observe(viewLifecycleOwner) { routeData ->
+            routeData?.let {
+                with(binding.routeSummary) {
+                    tvDepartureStation.text = it.path.firstOrNull()?.from?.nameCn ?: "未知"
+                    tvArrivalStation.text = it.path.lastOrNull()?.to?.nameCn ?: "未知"
+                    tvTotalTime.text = "${it.totalTime}分钟"
+                    tvTransferCount.text = "${it.transferCount}次"
+                    root.visibility = View.VISIBLE
+                }
+                routeStepAdapter.submitList(it.path)
             }
         }
 
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.searchButton.isEnabled = !isLoading
-            // TODO: Add loading indicator
+            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
 
-        viewModel.error.observe(viewLifecycleOwner) { error ->
-            error?.let {
-                binding.routeSummaryCard.visibility = View.GONE
-                // TODO: Show error message
+        viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
+            binding.tvError.apply {
+                text = error
+                visibility = if (error != null) View.VISIBLE else View.GONE
+            }
+            if (error != null) {
+                binding.routeSummary.root.visibility = View.GONE
+                routeStepAdapter.submitList(emptyList())
             }
         }
     }

@@ -105,7 +105,7 @@
     </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.card.MaterialCardView
-        android:id="@+id/nearbyCard"
+        android:id="@+id/crowdingCard"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:cardCornerRadius="8dp"
@@ -123,13 +123,13 @@
             <ImageView
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:src="@drawable/ic_nearby" />
+                android:src="@drawable/ic_crowding" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="附近站点"
+                android:text="拥挤度查询"
                 android:textSize="18sp" />
 
         </LinearLayout>

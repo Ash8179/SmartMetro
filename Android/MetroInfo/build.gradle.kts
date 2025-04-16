@@ -5,7 +5,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.google.dagger:hilt-android-gradle-plugin:2.50")
+        classpath("com.google.dagger:hilt-android-gradle-plugin:2.48")
         classpath("androidx.navigation:navigation-safe-args-gradle-plugin:2.7.7")
     }
 }

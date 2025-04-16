@@ -1,13 +1,15 @@
 package com.example.metroinfo.viewmodel
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metroinfo.model.ArrivalInfo
+import com.example.metroinfo.model.ArrivalTimeInfo
 import com.example.metroinfo.model.Line
 import com.example.metroinfo.repository.MetroRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import timber.log.Timber
@@ -16,26 +18,31 @@ import timber.log.Timber
 class ArrivalViewModel @Inject constructor(
     private val repository: MetroRepository
 ) : ViewModel() {
-    private val _lines = MutableLiveData<List<Line>>()
-    val lines: LiveData<List<Line>> = _lines
+    private val _lines = MutableStateFlow<List<Line>>(emptyList())
+    val lines: StateFlow<List<Line>> = _lines.asStateFlow()
 
-    private val _arrivalInfo = MutableLiveData<List<ArrivalInfo>>()
-    val arrivalInfo: LiveData<List<ArrivalInfo>> = _arrivalInfo
+    private val _stations = MutableStateFlow<List<ArrivalTimeInfo>>(emptyList())
+    val stations: StateFlow<List<ArrivalTimeInfo>> = _stations.asStateFlow()
 
-    private val _error = MutableLiveData<String>()
-    val error: LiveData<String> = _error
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     fun loadLines() {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                val lines = repository.getLines()
-                _lines.value = lines
-                if (lines.isEmpty()) {
-                    _error.value = "No lines available"
+                val response = repository.getLines()
+                if (response.isSuccessful) {
+                    val lines = response.body() ?: emptyList()
+                    _lines.value = lines
+                    if (lines.isEmpty()) {
+                        _error.value = "No lines available"
+                    }
+                } else {
+                    _error.value = "Failed to load lines: ${response.code()}"
                 }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Unknown error"
@@ -45,29 +52,59 @@ class ArrivalViewModel @Inject constructor(
         }
     }
 
-    fun getStationArrivalTime(stationId: String) {
+    fun selectLine(lineId: Int) {
         viewModelScope.launch {
-            _isLoading.value = true
             try {
-                val response = repository.getStationArrivalTime(stationId)
-                _arrivalInfo.value = response
+                _isLoading.value = true
+                val response = repository.getLineStationsArrivalTime(lineId)
+                if (response.isSuccessful) {
+                    val arrivalInfos = response.body() ?: emptyList()
+                    _stations.value = arrivalInfos.map { arrivalInfo ->
+                        ArrivalTimeInfo(
+                            lineId = arrivalInfo.lineId,
+                            stationId = arrivalInfo.stationId,
+                            stationName = arrivalInfo.stationName,
+                            lineName = arrivalInfo.lineName,
+                            directionDesc = arrivalInfo.directionDesc,
+                            firstArrivalTime = arrivalInfo.firstArrivalTime,
+                            minutesRemaining = arrivalInfo.minutesRemaining
+                        )
+                    }
+                } else {
+                    _error.value = "Failed to load stations: ${response.code()}"
+                }
             } catch (e: Exception) {
-                Timber.e(e, "获取到站信息失败")
-                _error.value = "获取到站信息失败"
+                _error.value = e.message ?: "Unknown error"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun getLineStationsWithArrivalTime(lineId: Int) {
+    fun getStationArrivalInfo(stationId: Int) {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
-                _isLoading.value = true
-                val arrivalTimeInfo = repository.getLineStationsArrivalTime(lineId)
-                _arrivalInfo.value = arrivalTimeInfo
+                val response = repository.getStationArrivalTime(stationId.toString())
+                if (response.isSuccessful) {
+                    val arrivalInfos = response.body() ?: emptyList()
+                    _stations.value = arrivalInfos.map { arrivalInfo ->
+                        ArrivalTimeInfo(
+                            lineId = arrivalInfo.lineId,
+                            stationId = arrivalInfo.stationId,
+                            stationName = arrivalInfo.stationName,
+                            lineName = arrivalInfo.lineName,
+                            directionDesc = arrivalInfo.directionDesc,
+                            firstArrivalTime = arrivalInfo.firstArrivalTime,
+                            minutesRemaining = arrivalInfo.minutesRemaining
+                        )
+                    }
+                } else {
+                    _error.value = "Failed to load arrival info: ${response.code()}"
+                }
             } catch (e: Exception) {
-                _error.value = "网络错误: ${e.message}"
+                Timber.e(e, "获取到站信息失败")
+                _error.value = "获取到站信息失败"
             } finally {
                 _isLoading.value = false
             }
@@ -78,40 +115,28 @@ class ArrivalViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                val stations = repository.searchStations(query)
-                _arrivalInfo.value = stations
-                if (stations.isEmpty()) {
-                    _error.value = "No stations found"
+                val response = repository.searchStations(query)
+                if (response.isSuccessful) {
+                    val arrivalInfos = response.body() ?: emptyList()
+                    _stations.value = arrivalInfos.map { arrivalInfo ->
+                        ArrivalTimeInfo(
+                            lineId = arrivalInfo.lineId,
+                            stationId = arrivalInfo.stationId,
+                            stationName = arrivalInfo.stationName,
+                            lineName = arrivalInfo.lineName,
+                            directionDesc = arrivalInfo.directionDesc,
+                            firstArrivalTime = arrivalInfo.firstArrivalTime,
+                            minutesRemaining = arrivalInfo.minutesRemaining
+                        )
+                    }
+                    if (arrivalInfos.isEmpty()) {
+                        _error.value = "No stations found"
+                    }
+                } else {
+                    _error.value = "Failed to search stations: ${response.code()}"
                 }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Unknown error"
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    fun getStationArrivalTimeDetails(stationId: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val response = repository.getStationArrivalTimeDetails(stationId)
-                _arrivalInfo.value = response.map { arrivalTimeInfo ->
-                    ArrivalInfo(
-                        lineId = arrivalTimeInfo.lineId,
-                        stationId = arrivalTimeInfo.stationId,
-                        stationName = arrivalTimeInfo.stationName,
-                        directionDesc = arrivalTimeInfo.directionDesc,
-                        firstArrivalTime = arrivalTimeInfo.firstArrivalTime,
-                        nextArrivalTime = "",
-                        minutesRemaining = arrivalTimeInfo.minutesRemaining,
-                        lineName = arrivalTimeInfo.lineName,
-                        arrivalTime = arrivalTimeInfo.firstArrivalTime
-                    )
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "获取站点详情失败")
-                _error.value = "获取站点详情失败"
             } finally {
                 _isLoading.value = false
             }

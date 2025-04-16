@@ -1,5 +1,6 @@
 package com.example.metroinfo.ui.line
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -34,10 +35,14 @@ class LineDetailFragment : Fragment() {
     private val args: LineDetailFragmentArgs by navArgs()
     private val stationAdapter = StationAdapter { station ->
         try {
-            val stationId = station.stationId.toInt()
-            findNavController().navigate(
-                LineDetailFragmentDirections.actionLineDetailToStationDetail(stationId)
-            )
+            val stationId = station.stationId?.toIntOrNull()
+            if (stationId != null) {
+                findNavController().navigate(
+                    LineDetailFragmentDirections.actionLineDetailToStationDetail(stationId)
+                )
+            } else {
+                Toast.makeText(context, "Invalid station ID", Toast.LENGTH_SHORT).show()
+            }
         } catch (e: NumberFormatException) {
             Toast.makeText(context, "Invalid station ID", Toast.LENGTH_SHORT).show()
         }
@@ -54,48 +59,65 @@ class LineDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupViews()
-        setupObservers()
+        setupRecyclerView()
+        setupClickListeners()
+        observeViewModel()
         viewModel.loadLineDetail(args.lineId)
     }
 
-    private fun setupViews() {
-        binding.apply {
-            stationsRecyclerView.apply {
-                layoutManager = LinearLayoutManager(context)
-                adapter = stationAdapter
-            }
-            swipeRefreshLayout.setOnRefreshListener {
-                viewModel.loadLineDetail(args.lineId)
-            }
-            toolbar.setNavigationOnClickListener {
-                findNavController().navigateUp()
-            }
+    private fun setupRecyclerView() {
+        binding.rvStations.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = stationAdapter
         }
     }
 
-    private fun setupObservers() {
+    private fun setupClickListeners() {
+        binding.btnRoute.setOnClickListener {
+            val startStation = stationAdapter.currentList.firstOrNull()
+            val endStation = stationAdapter.currentList.lastOrNull()
+            if (startStation != null && endStation != null) {
+                val startStationId = startStation.stationId?.toIntOrNull()
+                val endStationId = endStation.stationId?.toIntOrNull()
+                if (startStationId != null && endStationId != null) {
+                    val intent = Intent(requireContext(), RouteActivity::class.java).apply {
+                        putExtra(RouteActivity.EXTRA_START_STATION_ID, startStationId)
+                        putExtra(RouteActivity.EXTRA_END_STATION_ID, endStationId)
+                    }
+                    startActivity(intent)
+                } else {
+                    Snackbar.make(binding.root, "无效的站点ID", Snackbar.LENGTH_SHORT).show()
+                }
+            } else {
+                Snackbar.make(binding.root, "无法获取起始站和终点站", Snackbar.LENGTH_SHORT).show()
+            }
+        }
+
+        binding.btnArrivalTime.setOnClickListener {
+            val intent = ArrivalTimeActivity.newIntent(requireContext(), args.lineId)
+            startActivity(intent)
+        }
+    }
+
+    private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    binding.swipeRefreshLayout.isRefreshing = state.isLoading
+                    state.line?.let { updateUI(it) }
+                    state.stations?.let { stationAdapter.submitList(it) }
+                    binding.progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
                     state.error?.let { error ->
-                        Snackbar.make(binding.root, error, Snackbar.LENGTH_LONG).show()
-                    }
-                    state.line?.let { line ->
-                        binding.toolbar.title = line.nameCn
-                        try {
-                            binding.lineColorView.setBackgroundColor(Color.parseColor(line.color))
-                        } catch (e: IllegalArgumentException) {
-                            binding.lineColorView.setBackgroundColor(Color.GRAY)
-                        }
-                    }
-                    state.stations?.let { stations ->
-                        stationAdapter.submitList(stations)
+                        Snackbar.make(binding.root, error, Snackbar.LENGTH_SHORT).show()
                     }
                 }
             }
         }
+    }
+
+    private fun updateUI(line: Line) {
+        binding.tvLineName.text = line.nameCn
+        binding.tvLineNameEn.text = line.nameEn
+        binding.tvLineColor.setBackgroundColor(Color.parseColor(line.color))
     }
 
     override fun onDestroyView() {

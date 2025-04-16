@@ -31,18 +31,23 @@ class StationDetailViewModel @Inject constructor(
                 _isLoading.value = true
                 _error.value = null
                 val response = repository.getStationArrivalTimeDetails(stationId.toString())
-                _arrivalInfo.value = response.map { arrivalTimeInfo ->
-                    ArrivalInfo(
-                        lineId = arrivalTimeInfo.lineId,
-                        stationId = arrivalTimeInfo.stationId,
-                        stationName = arrivalTimeInfo.stationName,
-                        directionDesc = arrivalTimeInfo.directionDesc,
-                        firstArrivalTime = arrivalTimeInfo.firstArrivalTime,
-                        nextArrivalTime = "",
-                        minutesRemaining = arrivalTimeInfo.minutesRemaining,
-                        lineName = arrivalTimeInfo.lineName,
-                        arrivalTime = arrivalTimeInfo.firstArrivalTime
-                    )
+                if (response.isSuccessful) {
+                    val arrivalTimeInfoList = response.body() ?: emptyList()
+                    _arrivalInfo.value = arrivalTimeInfoList.map { arrivalTimeInfo ->
+                        ArrivalInfo(
+                            lineId = arrivalTimeInfo.lineId,
+                            stationId = arrivalTimeInfo.stationId,
+                            stationName = arrivalTimeInfo.stationName,
+                            directionDesc = arrivalTimeInfo.directionDesc,
+                            firstArrivalTime = arrivalTimeInfo.firstArrivalTime,
+                            nextArrivalTime = "",
+                            minutesRemaining = arrivalTimeInfo.minutesRemaining,
+                            lineName = arrivalTimeInfo.lineName,
+                            arrivalTime = arrivalTimeInfo.firstArrivalTime
+                        )
+                    }
+                } else {
+                    _error.value = "获取站点详情失败"
                 }
             } catch (e: Exception) {
                 Timber.e(e, "获取站点详情失败")

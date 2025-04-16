@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.metroinfo.databinding.ItemRouteSegmentBinding
 import com.example.metroinfo.model.RouteSegment
 
-class RouteAdapter : ListAdapter<RouteSegment, RouteAdapter.RouteViewHolder>(RouteDiffCallback()) {
+class RouteAdapter : ListAdapter<RouteSegment, RouteAdapter.RouteViewHolder>(RouteSegmentDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RouteViewHolder {
         val binding = ItemRouteSegmentBinding.inflate(
@@ -29,23 +29,28 @@ class RouteAdapter : ListAdapter<RouteSegment, RouteAdapter.RouteViewHolder>(Rou
 
         fun bind(segment: RouteSegment) {
             binding.apply {
-                lineText.text = "${segment.lineId}号线"
-                timeText.text = "${segment.segmentTime}分钟"
-                
-                val stationText = if (segment.isTransfer) {
-                    "换乘站：${segment.fromStation.nameCn}"
+                if (segment.isTransfer) {
+                    tvTransferInfo.text = segment.message
+                    tvTransferFromStation.text = segment.transferFromStation
+                    tvTransferToStation.text = segment.transferToStation
+                    tvTransferTime.text = "${segment.transferTime}分钟"
+                    transferInfoLayout.visibility = android.view.View.VISIBLE
+                    segmentInfoLayout.visibility = android.view.View.GONE
                 } else {
-                    "${segment.fromStation.nameCn} → ${segment.toStation.nameCn}"
+                    tvLineName.text = segment.lineName
+                    tvFromStation.text = segment.segmentFromStation
+                    tvToStation.text = segment.segmentToStation
+                    tvSegmentTime.text = "${segment.segmentTime}分钟"
+                    transferInfoLayout.visibility = android.view.View.GONE
+                    segmentInfoLayout.visibility = android.view.View.VISIBLE
                 }
-                binding.stationText.text = stationText
             }
         }
     }
 
-    private class RouteDiffCallback : DiffUtil.ItemCallback<RouteSegment>() {
+    private class RouteSegmentDiffCallback : DiffUtil.ItemCallback<RouteSegment>() {
         override fun areItemsTheSame(oldItem: RouteSegment, newItem: RouteSegment): Boolean {
-            return oldItem.fromStation.stationId == newItem.fromStation.stationId &&
-                   oldItem.toStation.stationId == newItem.toStation.stationId
+            return oldItem == newItem
         }
 
         override fun areContentsTheSame(oldItem: RouteSegment, newItem: RouteSegment): Boolean {

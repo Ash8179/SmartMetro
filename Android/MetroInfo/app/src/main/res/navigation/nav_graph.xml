@@ -36,13 +36,45 @@
         android:id="@+id/arrivalTimeFragment"
         android:name="com.example.metroinfo.ui.arrival.ArrivalTimeFragment"
         android:label="列车到达时间"
-        tools:layout="@layout/fragment_arrival_time" />
+        tools:layout="@layout/fragment_arrival_time">
+        <action
+            android:id="@+id/action_arrivalTime_to_stationDetail"
+            app:destination="@id/stationDetailFragment">
+            <argument
+                android:name="stationId"
+                app:argType="integer" />
+        </action>
+    </fragment>
 
     <fragment
         android:id="@+id/routeFragment"
         android:name="com.example.metroinfo.ui.route.RouteFragment"
         android:label="路线规划"
-        tools:layout="@layout/fragment_route" />
+        tools:layout="@layout/fragment_route">
+        <action
+            android:id="@+id/action_routeFragment_to_routeDetailFragment"
+            app:destination="@id/routeDetailFragment">
+            <argument
+                android:name="startStation"
+                app:argType="string" />
+            <argument
+                android:name="endStation"
+                app:argType="string" />
+        </action>
+    </fragment>
+
+    <fragment
+        android:id="@+id/routeDetailFragment"
+        android:name="com.example.metroinfo.ui.route.RouteDetailFragment"
+        android:label="路线详情"
+        tools:layout="@layout/fragment_route_detail">
+        <argument
+            android:name="startStation"
+            app:argType="string" />
+        <argument
+            android:name="endStation"
+            app:argType="string" />
+    </fragment>
 
     <fragment
         android:id="@+id/nearbyStationsFragment"

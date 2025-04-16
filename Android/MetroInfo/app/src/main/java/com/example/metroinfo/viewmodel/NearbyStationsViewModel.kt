@@ -1,12 +1,12 @@
 package com.example.metroinfo.viewmodel
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.metroinfo.model.Station
+import com.example.metroinfo.data.model.NearbyStation
 import com.example.metroinfo.repository.MetroRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -15,20 +15,21 @@ class NearbyStationsViewModel @Inject constructor(
     private val repository: MetroRepository
 ) : ViewModel() {
 
-    private val _nearbyStations = MutableLiveData<List<Station>>()
-    val nearbyStations: LiveData<List<Station>> = _nearbyStations
+    private val _nearbyStations = MutableStateFlow<List<NearbyStation>>(emptyList())
+    val nearbyStations: StateFlow<List<NearbyStation>> = _nearbyStations
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _error = MutableLiveData<String>()
-    val error: LiveData<String> = _error
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
 
-    fun getNearbyStations(latitude: Double, longitude: Double, radius: Int = 1000) {
+    fun updateLocation(latitude: Double, longitude: Double) {
         viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
             try {
-                _isLoading.value = true
-                val stations = repository.getNearestStations(latitude, longitude, radius)
+                val stations = repository.getNearestStations(latitude, longitude)
                 _nearbyStations.value = stations
             } catch (e: Exception) {
                 _error.value = e.message ?: "获取附近站点失败"

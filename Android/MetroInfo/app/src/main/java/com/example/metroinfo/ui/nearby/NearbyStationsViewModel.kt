@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metroinfo.data.model.NearbyStation
 import com.example.metroinfo.data.repository.MetroRepository
+import com.example.metroinfo.model.NearestStationsResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,16 +20,17 @@ class NearbyStationsViewModel @Inject constructor(
     private val _nearbyStations = MutableStateFlow<List<NearbyStation>>(emptyList())
     val nearbyStations: StateFlow<List<NearbyStation>> = _nearbyStations
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _error = MutableLiveData<String>()
-    val error: LiveData<String> = _error
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
 
     fun updateLocation(latitude: Double, longitude: Double) {
         viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
             try {
-                _isLoading.value = true
                 val stations = repository.getNearbyStations(latitude, longitude)
                 _nearbyStations.value = stations
             } catch (e: Exception) {

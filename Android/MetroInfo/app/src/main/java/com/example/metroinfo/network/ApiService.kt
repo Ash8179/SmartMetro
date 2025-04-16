@@ -7,12 +7,10 @@ import com.example.metroinfo.model.BestRouteResponse
 import com.example.metroinfo.model.NearestStationsResponse
 import com.example.metroinfo.model.Station
 import com.example.metroinfo.model.Line
-import com.example.metroinfo.model.Route
 import com.example.metroinfo.model.ArrivalInfo
 import com.example.metroinfo.model.RouteRequest
 import com.example.metroinfo.model.LineInfo
 import com.example.metroinfo.model.StationInfo
-import com.example.metroinfo.model.RouteInfo
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -21,13 +19,18 @@ import retrofit2.http.Query
 import retrofit2.http.Path
 
 interface ApiService {
+    @GET("api/nearby-stations")
+    suspend fun getNearbyStations(
+        @Query("latitude") latitude: Double,
+        @Query("longitude") longitude: Double
+    ): List<NearbyStation>
 
     @GET("api/metro/nearest-stations")
     suspend fun getNearestStations(
         @Query("latitude") latitude: Double,
         @Query("longitude") longitude: Double,
         @Query("radius") radius: Int = 1000
-    ): Response<List<Station>>
+    ): Response<NearestStationsResponse>
 
     @GET("api/stations")
     suspend fun getStations(): Response<List<Station>>
@@ -56,7 +59,7 @@ interface ApiService {
     suspend fun getRoute(
         @Query("start_station_id") startStationId: Int,
         @Query("end_station_id") endStationId: Int
-    ): Response<Route>
+    ): Response<BestRouteResponse>
 
     @GET("api/arrival-time/station/{stationId}")
     suspend fun getStationArrivalTime(@Path("stationId") stationId: String): Response<List<ArrivalTimeInfo>>
@@ -71,7 +74,7 @@ interface ApiService {
     suspend fun getBestRoute(
         @Query("start_station_id") startStationId: Int,
         @Query("end_station_id") endStationId: Int
-    ): Response<RouteInfo>
+    ): Response<BestRouteResponse>
 
     @GET("api/stations/{stationId}")
     suspend fun getStation(@Path("stationId") stationId: Int): Response<Station>

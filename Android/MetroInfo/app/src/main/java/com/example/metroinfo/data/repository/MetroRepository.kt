@@ -1,7 +1,7 @@
 package com.example.metroinfo.data.repository
 
 import com.example.metroinfo.data.model.NearbyStation
-import com.example.metroinfo.data.model.LineInfo
+import com.example.metroinfo.model.NearestStationsResponse
 import com.example.metroinfo.network.ApiService
 import javax.inject.Inject
 
@@ -17,30 +17,13 @@ class MetroRepository @Inject constructor(
             longitude = longitude
         )
         return if (response.isSuccessful) {
-            response.body()?.map { station ->
-                val associatedLines = station.associatedLines?.split(",")?.map { it.trim().toInt() } ?: emptyList()
-                val lines = if (associatedLines.isNotEmpty()) {
-                    associatedLines.map { lineId ->
-                        LineInfo(
-                            id = lineId,
-                            nameCn = "${lineId}号线",
-                            nameEn = "Line $lineId"
-                        )
-                    }
-                } else {
-                    listOf(LineInfo(
-                        id = station.lineId,
-                        nameCn = "${station.lineId}号线",
-                        nameEn = "Line ${station.lineId}"
-                    ))
-                }
-                
+            response.body()?.nearestStations?.map { station ->
                 NearbyStation(
                     id = station.stationId,
                     name = station.nameCn,
                     nameEn = station.nameEn,
-                    distance = station.distance,
-                    lines = lines
+                    distance = station.distanceM.toDouble() / 1000.0, // 转换为公里
+                    lines = station.associatedLines
                 )
             } ?: emptyList()
         } else {
