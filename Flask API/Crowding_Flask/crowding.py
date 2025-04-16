@@ -40,12 +40,15 @@ def post_line_crowding():
        """
     try:
         data = request.json
-        line_id = int(request.args.get('line_id'))
-        line_number = int(request.args.get('line_number'))
-        line_carriage = int(request.args.get('line_carriage'))
-        person_num = int(request.args.get('person_num'))
+        line_id = int(data['line_id'])  # 使用 data 字典来提取参数
+        line_number = int(data['line_number'])
+        line_carriage = int(data['line_carriage'])
+        person_num = int(data['person_num'])
+
         crowd_level = 0 if person_num < 15 else 2 if person_num > 30 else 1
         print(crowd_level)
+
+
     except (KeyError, ValueError) as e:
         return jsonify({'error': f'Invalid parameters: {str(e)}'}), 400
 
@@ -60,10 +63,11 @@ def post_line_crowding():
         )
         cursor = conn.cursor(dictionary=True)
         sql = "insert into line_crowding (line_id, line_number, line_carriage, person_num, timestamp, crowd_level) values (%s,%s,%s,%s,now(),%s)"
-        val = (line_id,line_number,line_carriage,person_num,crowd_level)
+        val = (line_id, line_number, line_carriage, person_num, crowd_level)
+
         cursor.execute(sql,val)
         #stations = cursor.fetchall()
-
+        conn.commit()  # 提交事务
 
 
         return jsonify({
@@ -71,6 +75,7 @@ def post_line_crowding():
         })
 
     except Exception as e:
+
         app.logger.error(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
     finally:
@@ -78,4 +83,5 @@ def post_line_crowding():
             conn.close()
 
 if __name__ == '__main__':
+
     app.run(host='0.0.0.0', port=5002, debug=True)
