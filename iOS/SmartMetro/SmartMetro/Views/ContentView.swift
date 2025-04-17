@@ -3,17 +3,11 @@ import CoreLocation
 
 struct ContentView: View {
     @StateObject private var locationManager = LocationManager()
-    @State private var stations: [MetroStation]
-    @State private var isLoading: Bool
+    @State private var stations: [MetroStation] = []
+    @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showingTransferQuery = false
-    @State private var showingLineQuery = false // 新增状态变量
-
-    init(stations: [MetroStation] = [], isLoading: Bool = false, errorMessage: String? = nil) {
-        _stations = State(initialValue: stations)
-        _isLoading = State(initialValue: isLoading)
-        _errorMessage = State(initialValue: errorMessage)
-    }
+    @State private var showingTravelInfo = false // New state for TravelInfo
 
     var body: some View {
         NavigationStack {
@@ -33,50 +27,58 @@ struct ContentView: View {
         .sheet(isPresented: $showingTransferQuery) {
             TransferQueryView()
         }
-        .sheet(isPresented: $showingLineQuery) { // 新增线路查询视图
-            StationQuery()
+        .sheet(isPresented: $showingTravelInfo) { // Sheet for TravelInfo
+            StationInfoView()
         }
     }
 
+    // MARK: - Button Section
     private var buttonSection: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 24) { // Increased horizontal space between the buttons for better balance
             transferQueryButton
-            lineQueryButton // 添加新按钮
+            travelInfoButton
         }
-        .padding(.vertical, 10)
+        .padding(.horizontal, 28)  // Extra side margins for breathing room
+        .padding(.vertical, 14)    // Slightly taller vertical padding for elegance
     }
 
+    // MARK: - Transfer Query Button
     private var transferQueryButton: some View {
         Button(action: {
             showingTransferQuery = true
         }) {
-            HStack(spacing: 4) {
+            Label {
                 Text("换乘查询")
-                Text("🚆")
+                    .font(.system(size: 16, weight: .semibold))  // Text size adjusted
+            } icon: {
+                Image(systemName: "arrow.triangle.swap")
+                    .font(.system(size: 22))                    // Icon size enlarged
             }
-            .font(.headline)
             .foregroundColor(.blue)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 15)
+            .frame(maxWidth: .infinity, minHeight: 52)          // Minimum height increased for visual balance
             .background(Color(.systemGray6))
-            .cornerRadius(10)
+            .cornerRadius(16)                                   // Softer corners for modern look
+            .shadow(color: .gray.opacity(0.1), radius: 4, x: 0, y: 3)
         }
     }
 
-    private var lineQueryButton: some View { // 线路查询按钮
+    // MARK: - Travel Info Button
+    private var travelInfoButton: some View {
         Button(action: {
-            showingLineQuery = true
+            showingTravelInfo = true
         }) {
-            HStack(spacing: 4) {
+            Label {
                 Text("线路查询")
-                Text("🗺️")
+                    .font(.system(size: 16, weight: .semibold))  // Text size adjusted
+            } icon: {
+                Image(systemName: "map")
+                    .font(.system(size: 22))                    // Icon size enlarged
             }
-            .font(.headline)
             .foregroundColor(.blue)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 15)
+            .frame(maxWidth: .infinity, minHeight: 52)          // Minimum height increased for visual balance
             .background(Color(.systemGray6))
-            .cornerRadius(10)
+            .cornerRadius(16)                                   // Softer corners for modern look
+            .shadow(color: .gray.opacity(0.1), radius: 4, x: 0, y: 3)
         }
     }
 
@@ -160,79 +162,133 @@ struct ContentView: View {
 
 // MARK: - 预览提供器
 struct ContentView_Previews: PreviewProvider {
-    // 模拟线路信息
+    
     static let mockLineInfo = LineInfo(
         lineNumber: 10,
         allStations: ["虹桥火车站", "虹桥2号航站楼", "虹桥1号航站楼", "上海动物园"]
     )
     
-    // 模拟换乘站点的线路信息
     static let transferLineInfo = LineInfo(
         lineNumber: 8,
         allStations: ["市光路", "嫩江路", "翔殷路", "黄兴公园"]
     )
-    
+
     static var previews: some View {
         Group {
-            // 正常数据预览（包含换乘站点）
-            ContentView(
-                stations: [
-                    MetroStation(
-                        id: 1,
-                        nameCN: "同济大学",
-                        nameEN: "Tongji University",
-                        travelGroup: "244",
-                        distanceM: 250,
-                        lineInfo: mockLineInfo,
-                        associatedLines: [11]
-                    ),
-                    MetroStation(
-                        id: 2,
-                        nameCN: "四平路",
-                        nameEN: "Siping Road",
-                        travelGroup: "189",
-                        distanceM: 560,
-                        lineInfo: transferLineInfo,
-                        associatedLines: [8, 10]
-                    )
-                ]
-            )
+            PreviewWrapper(stations: [
+                MetroStation(
+                    id: 1,
+                    nameCN: "同济大学",
+                    nameEN: "Tongji University",
+                    travelGroup: "244",
+                    distanceM: 250,
+                    lineInfo: mockLineInfo,
+                    associatedLines: [11]
+                ),
+                MetroStation(
+                    id: 2,
+                    nameCN: "四平路",
+                    nameEN: "Siping Road",
+                    travelGroup: "189",
+                    distanceM: 560,
+                    lineInfo: transferLineInfo,
+                    associatedLines: [8, 10]
+                )
+            ])
             .previewDisplayName("换乘站点")
             
-            // 单线路站点预览
-            ContentView(
-                stations: [
-                    MetroStation(
-                        id: 3,
-                        nameCN: "南京东路",
-                        nameEN: "East Nanjing Road",
-                        travelGroup: "10",
-                        distanceM: 800,
-                        lineInfo: mockLineInfo,
-                        associatedLines: [10]
-                    )
-                ]
-            )
+            PreviewWrapper(stations: [
+                MetroStation(
+                    id: 3,
+                    nameCN: "南京东路",
+                    nameEN: "East Nanjing Road",
+                    travelGroup: "10",
+                    distanceM: 800,
+                    lineInfo: mockLineInfo,
+                    associatedLines: [10]
+                )
+            ])
             .previewDisplayName("单线路站点")
             
-            // 加载中状态
-            ContentView(
-                stations: [],
-                isLoading: true
-            )
-            .previewDisplayName("加载中")
+            PreviewWrapper(isLoading: true)
+                .previewDisplayName("加载中")
             
-            // 错误状态
-            ContentView(
-                stations: [],
-                errorMessage: "定位服务不可用"
-            )
-            .previewDisplayName("错误状态")
+            PreviewWrapper(errorMessage: "定位服务不可用")
+                .previewDisplayName("错误状态")
             
-            // 空数据状态
-            ContentView(stations: [])
+            PreviewWrapper(stations: [])
                 .previewDisplayName("空数据")
         }
         .previewLayout(.sizeThatFits)
+    }
+
+    struct PreviewWrapper: View {
+        @State private var stations: [MetroStation]
+        @State private var isLoading: Bool
+        @State private var errorMessage: String?
+        @State private var showingTransferQuery = false
+        @State private var showingLineQuery = false
+        @State private var showingTravelInfo = false
+
+        init(stations: [MetroStation] = [], isLoading: Bool = false, errorMessage: String? = nil) {
+            _stations = State(initialValue: stations)
+            _isLoading = State(initialValue: isLoading)
+            _errorMessage = State(initialValue: errorMessage)
+        }
+
+        var body: some View {
+            NavigationStack {
+                VStack(spacing: 6) {
+                    Divider()
+                    HStack(spacing: 15) {
+                        Button(action: { showingTransferQuery = true }) {
+                            VStack(spacing: 4) {
+                                Text("🚆")
+                                Text("换乘查询")
+                                    .font(.system(size: 12))
+                            }
+                            .foregroundColor(.blue)
+                            .padding(10)
+                            .frame(maxWidth: .infinity)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                        }
+                        Button(action: { showingLineQuery = true }) {
+                            VStack(spacing: 4) {
+                                Text("🗺️")
+                                Text("线路查询")
+                                    .font(.system(size: 12))
+                            }
+                            .foregroundColor(.blue)
+                            .padding(10)
+                            .frame(maxWidth: .infinity)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                        }
+                    }
+                    .padding(.vertical, 10)
+                    Divider()
+                    if isLoading {
+                        ProgressView("Locating...")
+                    } else if let errorMessage {
+                        ContentUnavailableView(
+                            label: { Label("Fail to load", systemImage: "wifi.exclamationmark") },
+                            description: { Text(errorMessage) }
+                        )
+                    } else if stations.isEmpty {
+                        ContentUnavailableView(
+                            label: { Label("No Metro Station Found", systemImage: "tram.fill") },
+                            description: { Text("No metro stations within 5 kilometers.") }
+                        )
+                    } else {
+                        List(stations.prefix(5)) { station in
+                            StationRow(station: station)
+                        }
+                        .listStyle(.plain)
+                    }
+                }
+                .navigationTitle("上海地铁")
+            }
+        }
     }
 }
