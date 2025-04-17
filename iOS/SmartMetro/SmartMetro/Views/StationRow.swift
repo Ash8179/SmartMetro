@@ -113,9 +113,16 @@ extension Color {
 // MARK: - 站点行视图
 struct StationRow: View {
     let station: MetroStation
-    @State private var showLineStations = false
+    @State private var isExpanded = false
+    @State private var selectedLine: Int? = nil
+    @State private var upCrowdingData: [CarriageCrowding] = []
+    @State private var downCrowdingData: [CarriageCrowding] = []
+    @State private var trainArrivals: [TrainArrival] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    @Namespace private var animationNamespace
     
-    // 线路配置
+    // 线路颜色配置
     private let lineConfig: [Int: (color: Color, bgColor: Color, name: String)] = [
         1: (Color(hex: "e3002b"), Color(hex: "fdeae9"), "1"),
         2: (Color(hex: "8cc220"), Color(hex: "EBF7EC"), "2"),
@@ -139,51 +146,321 @@ struct StationRow: View {
         51: (Color(hex: "cccccc"), Color(hex: "dddddd"), "机场联络线")
     ]
     
-    private var stationLines: [Int] {
-        station.associatedLines
-    }
-    
     var body: some View {
-        NavigationLink(destination: StationDetailView(station: station)) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    // 站点名称（靠左）
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(station.nameCN)
-                            .font(.system(size: 20, weight: .semibold))
-                        Text(station.nameEN)
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
-                    }
-                    
-                    Spacer()
+        VStack(alignment: .leading, spacing: 0) {
+            headerView
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
 
-                    // 线路信息 + 站点距离（上下排列，间距 6）
-                    VStack(alignment: .trailing) {
-                        HStack(spacing: 6) {
-                            ForEach(stationLines, id: \.self) { lineNumber in
-                                if let config = lineConfig[lineNumber] {
-                                    Text(config.name)
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 32, height: 32)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 6)
-                                                .fill(config.color)
-                                        )
-                                }
+            if isExpanded {
+                expandedContentView
+                    .matchedGeometryEffect(id: "ExpandedView", in: animationNamespace)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - Header
+    private var headerView: some View {
+        Button(action: toggleExpansion) {
+            HStack(alignment: .center, spacing: 18) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(station.nameCN)
+                        .font(.system(size: 21, weight: .bold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+
+                    Text(station.nameEN)
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                VStack(alignment: .trailing, spacing: 9) {
+                    HStack(spacing: 8) {  // 徽章间距 +1
+                        ForEach(station.associatedLines, id: \.self) { line in
+                            if let config = lineConfig[line] {
+                                Text(config.name)
+                                    .font(.system(size: 14, weight: .bold))  // 字体+1
+                                    .foregroundColor(.white)
+                                    .frame(width: 28, height: 28)            // 徽章尺寸+4
+                                    .background(config.color)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))  // 圆角同步加大
                             }
                         }
-                        
-                        Text("\(station.distanceM)m") // 站点距离
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.secondary)
-                            .padding(.top, 1) // 控制间距为 6
                     }
+
+                    Text("\(station.distanceM)m")
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundColor(.secondary)
                 }
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var expandedContentView: some View {
+        VStack(spacing: 16) {
+            // 线路选择器
+            lineSelectorView
+            
+            // 选中的线路详情
+            if let line = selectedLine {
+                if let errorMessage = errorMessage {
+                    ErrorView(message: errorMessage) {
+                        loadData(for: line)
+                    }
+                    .padding(.horizontal)
+                } else {
+                    lineDetailView(for: line)
+                        .padding(.horizontal, 12)
+                }
+            } else {
+                Text("请选择要查看的线路")
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 100)
+            }
+        }
+        .padding(.bottom, 16)
+    }
+    
+    private var lineSelectorView: some View {
+        HStack(spacing: 12) {
+            ForEach(station.associatedLines, id: \.self) { line in
+                Button(action: {
+                    selectedLine = line
+                    loadData(for: line)
+                }) {
+                    if let config = lineConfig[line] {
+                        Text(config.name)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(selectedLine == line ? .white : config.color)
+                            .frame(width: 48, height: 36) // fixed size for all buttons
+                            .background(selectedLine == line ? config.color : Color(.systemGray5))
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .frame(maxWidth: .infinity)  // Stretch container to center
+        .padding(.horizontal, 20)
+    }
+    
+    private func lineDetailView(for line: Int) -> some View {
+        VStack(spacing: 16) {
+            if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 150)
+            } else {
+                if !upCrowdingData.isEmpty {
+                    crowdingCard(for: "上行", data: upCrowdingData)
+                }
+                if !downCrowdingData.isEmpty {
+                    crowdingCard(for: "下行", data: downCrowdingData)
+                }
+                if !trainArrivals.isEmpty {
+                    arrivalCard
+                }
+            }
+        }
+    }
+    
+    private func crowdingCard(for path: String, data: [CarriageCrowding]) -> some View {
+        let primaryColor = lineConfig[selectedLine ?? 1]?.color ?? .blue
+        _ = lineConfig[selectedLine ?? 1]?.bgColor ?? Color(.systemGray6)
+
+        return VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("最近\(path)列车")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                if let averageLevel = averageCrowdingLevel(for: path) {
+                    CrowdLevelBadge(level: averageLevel)
+                }
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    Image(systemName: "train.side.rear.car")
+                        .font(.system(size: 24))
+                        .foregroundColor(primaryColor)
+
+                    ForEach(1...8, id: \.self) { index in
+                        let carriage = data.first(where: { $0.line_carriage == index })
+
+                        VStack(spacing: 6) {
+                            Text("\(index)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.05), radius: 1, x: 0, y: 1)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(primaryColor, lineWidth: 1.2)
+                                    )
+                                    .frame(width: 48, height: 36)
+
+                                if let carriage = carriage {
+                                    CrowdLevelBadge(level: carriage.crowd_level)
+                                        .scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: "questionmark.circle")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.gray)
+                                }
+                            }
+
+                            if let carriage = carriage {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "person.fill")
+                                        .font(.caption2)
+                                    Text("\(carriage.person_num)")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                            } else {
+                                Text("--")
+                                    .font(.caption2)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+
+                    Image(systemName: "train.side.front.car")
+                        .font(.system(size: 24))
+                        .foregroundColor(primaryColor)
+                }
+                .padding(.vertical, 8)
+            }
+        }
+        .padding(16)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    
+    private var arrivalCard: some View {
+        ArrivalCard(arrivals: trainArrivals)
+    }
+    
+    // MARK: - 组件
+    private func lineBadge(line: Int, config: (color: Color, bgColor: Color, name: String), isSelected: Bool) -> some View {
+        Text(config.name)
+            .font(.system(size: 15, weight: .bold))
+            .foregroundColor(isSelected ? .white : config.color)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isSelected ? config.color : config.bgColor)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(config.color, lineWidth: 1)
+            )
+    }
+    
+    // MARK: - 操作方法
+    private func toggleExpansion() {
+        withAnimation(.spring()) {
+            isExpanded.toggle()
+            if isExpanded && selectedLine == nil {
+                selectedLine = station.associatedLines.first
+            } else if !isExpanded {
+                selectedLine = nil
+                upCrowdingData = []
+                downCrowdingData = []
+                trainArrivals = []
+                errorMessage = nil
+            }
+        }
+    }
+    
+    private func selectLine(_ line: Int) {
+        withAnimation {
+            selectedLine = line
+            loadData(for: line)
+        }
+    }
+    
+    private func loadData(for line: Int) {
+        isLoading = true
+        upCrowdingData = []
+        downCrowdingData = []
+        trainArrivals = []
+        errorMessage = nil
+        
+        Task {
+            do {
+                async let crowdingTask = MetroAPIService.shared.fetchCrowding(for: line)
+                async let arrivalsTask = MetroAPIService.shared.fetchNextTrains(for: station.nameCN)
+                
+                let (crowdingDict, arrivalsResponse) = await (try crowdingTask, try arrivalsTask)
+                
+                // 提取上下行拥挤度数据
+                let upData = crowdingDict["path_0"] ?? []
+                let downData = crowdingDict["path_1"] ?? []
+                
+                // 获取到站时间数据 - 合并上下行
+                let lineKey = "Line_\(line)"
+                guard let lineArrivals = arrivalsResponse.lines[lineKey] else {
+                    throw NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "未找到线路\(line)的列车信息"])
+                }
+                
+                // 合并上下行列车数据
+                let allArrivals = lineArrivals.up_direction + lineArrivals.down_direction
+                
+                withAnimation {
+                    self.upCrowdingData = upData
+                    self.downCrowdingData = downData
+                    self.trainArrivals = allArrivals
+                    self.isLoading = false
+                }
+                
+                // 调试打印
+                print("拥挤度数据 - 上行: \(upData.count)条, 下行: \(downData.count)条")
+                print("到站时间数据 - 上行: \(lineArrivals.up_direction.count)班, 下行: \(lineArrivals.down_direction.count)班")
+                print("合并后列车总数: \(allArrivals.count)班")
+                
+            } catch {
+                withAnimation {
+                    self.isLoading = false
+                    self.errorMessage = "数据加载失败: \(error.localizedDescription)"
+                }
+                print("数据加载错误: \(error)")
+            }
+        }
+    }
+    
+    // MARK: - 计算属性
+    private func averageCrowdingLevel(for path: String) -> Int? {
+        var data: [CarriageCrowding] = []
+        
+        // 根据 path 选择对应的数据
+        if path == "up" {
+            data = upCrowdingData
+        } else if path == "down" {
+            data = downCrowdingData
+        }
+        
+        // 计算平均值
+        guard !data.isEmpty else { return nil }
+        let total = data.reduce(0) { $0 + $1.crowd_level }
+        return total / data.count
     }
 }
 
