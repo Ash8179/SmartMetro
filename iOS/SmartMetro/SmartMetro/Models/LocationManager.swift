@@ -11,8 +11,12 @@ class LocationManager: NSObject, ObservableObject {
         manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
         
-        // 这里手动设置默认位置为上海（仅测试用）
-        self.location = CLLocationCoordinate2D(latitude: 31.236, longitude: 121.480)
+        // 随机生成一个上海市中心附近的坐标
+        let randomLatitude = Double.random(in: 31.200...31.260)
+        let randomLongitude = Double.random(in: 121.420...121.500)
+        self.location = CLLocationCoordinate2D(latitude: randomLatitude, longitude: randomLongitude)
+
+        print("📍 Mock Location Set: \(randomLatitude), \(randomLongitude)")
     }
 }
 
