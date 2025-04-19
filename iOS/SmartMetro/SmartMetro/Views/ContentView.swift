@@ -7,7 +7,8 @@ struct ContentView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showingTransferQuery = false
-    @State private var showingTravelInfo = false // New state for TravelInfo
+    @State private var showingTravelInfo = false
+    @State private var showingTestStation = false // 新增测试状态
 
     var body: some View {
         NavigationStack {
