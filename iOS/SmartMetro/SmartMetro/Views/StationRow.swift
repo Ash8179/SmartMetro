@@ -120,6 +120,8 @@ struct StationRow: View {
     @State private var trainArrivals: [TrainArrival] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var navigateToDetails = false
+    @State private var showDetails = false
     @Namespace private var animationNamespace
     
     // 线路颜色配置
@@ -153,9 +155,17 @@ struct StationRow: View {
                 .padding(.vertical, 16)
 
             if isExpanded {
-                expandedContentView
-                    .matchedGeometryEffect(id: "ExpandedView", in: animationNamespace)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                ZStack {
+                    if showDetails {
+                        StationDetailsView(nameCN: station.nameCN, isShowing: $showDetails)
+                            .matchedGeometryEffect(id: "ExpandedView", in: animationNamespace)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    } else {
+                        expandedContentView
+                            .matchedGeometryEffect(id: "ExpandedView", in: animationNamespace)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    }
+                }
             }
         }
         .background(Color(.systemBackground))
@@ -163,11 +173,13 @@ struct StationRow: View {
         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isExpanded)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showDetails)
     }
 
     // MARK: - Header
     private var headerView: some View {
-        Button(action: toggleExpansion) {
+        Button(action: { withAnimation { isExpanded.toggle() } }) {
             HStack(alignment: .center, spacing: 18) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(station.nameCN)
@@ -183,15 +195,15 @@ struct StationRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .trailing, spacing: 9) {
-                    HStack(spacing: 8) {  // 徽章间距 +1
+                    HStack(spacing: 8) {
                         ForEach(station.associatedLines, id: \.self) { line in
                             if let config = lineConfig[line] {
                                 Text(config.name)
-                                    .font(.system(size: 14, weight: .bold))  // 字体+1
+                                    .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(.white)
-                                    .frame(width: 28, height: 28)            // 徽章尺寸+4
+                                    .frame(width: 28, height: 28)
                                     .background(config.color)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))  // 圆角同步加大
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                             }
                         }
                     }
@@ -209,10 +221,25 @@ struct StationRow: View {
     
     private var expandedContentView: some View {
         VStack(spacing: 16) {
-            // 线路选择器
+
+            Button(action: {
+                withAnimation {
+                    showDetails = true
+                }
+            }) {
+                Text("更多信息")
+                    .font(.caption2)  // 更小，不突出
+                    .foregroundColor(.secondary)  // 淡灰色，降低吸引力
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(.systemGray5))
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.top, 4)  // 紧贴卡片
+
             lineSelectorView
-            
-            // 选中的线路详情
+
             if let line = selectedLine {
                 if let errorMessage = errorMessage {
                     ErrorView(message: errorMessage) {
@@ -236,8 +263,13 @@ struct StationRow: View {
         HStack(spacing: 12) {
             ForEach(station.associatedLines, id: \.self) { line in
                 Button(action: {
-                    selectedLine = line
-                    loadData(for: line)
+                    if selectedLine == line {
+                        // 如果已经是选中，再次点击则收回
+                        selectedLine = nil
+                    } else {
+                        selectedLine = line
+                        loadData(for: line)
+                    }
                 }) {
                     if let config = lineConfig[line] {
                         Text(config.name)
@@ -372,6 +404,32 @@ struct StationRow: View {
                 RoundedRectangle(cornerRadius: 6)
                     .stroke(config.color, lineWidth: 1)
             )
+    }
+    
+    struct BadgeButton: View {
+        let title: String
+        let action: () -> Void
+
+        @State private var isPressed = false
+
+        var body: some View {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.blue)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.blue.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .scaleEffect(isPressed ? 0.95 : 1.0)
+                .animation(.easeInOut(duration: 0.15), value: isPressed)
+                .onLongPressGesture(minimumDuration: 0.001, pressing: { pressing in
+                    withAnimation {
+                        isPressed = pressing
+                    }
+                }, perform: {
+                    action()
+                })
+        }
     }
     
     // MARK: - 操作方法
