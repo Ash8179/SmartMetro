@@ -77,6 +77,7 @@ struct StationDetailView: View {
     @State private var isLoading = false
     @State private var showLineSelection = false
     @State private var errorMessage: String?
+    @State private var congestionData: CongestionResponse? = nil
     
     
     var body: some View {
@@ -153,10 +154,9 @@ struct StationDetailView: View {
                     .frame(maxWidth: .infinity, minHeight: 200)
             } else {
                 VStack(spacing: 20) {
-                    // 车拥挤度可视化
+                    // 车厢拥挤度可视化
                     if !upCrowdingData.isEmpty || !downCrowdingData.isEmpty {
                         VStack(spacing: 16) {
-                            // 上行列车
                             if !upCrowdingData.isEmpty {
                                 TrainVisualizationView(
                                     crowdingData: upCrowdingData,
@@ -165,7 +165,6 @@ struct StationDetailView: View {
                                 )
                             }
                             
-                            // 下行列车
                             if !downCrowdingData.isEmpty {
                                 TrainVisualizationView(
                                     crowdingData: downCrowdingData,
@@ -175,10 +174,15 @@ struct StationDetailView: View {
                             }
                         }
                     }
-                    
+
                     // 到站时间卡片
                     if !trainArrivals.isEmpty {
                         ArrivalCard(arrivals: trainArrivals)
+                    }
+
+                    // 安检口站点拥挤信息
+                    if let congestion = congestionData {
+                        StationCongestionView(congestion: congestion)
                     }
                 }
                 .padding(.horizontal)
@@ -343,8 +347,17 @@ struct ArrivalCard: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color.white)
         .cornerRadius(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)  // 边框
+                )
+                .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3)  // 阴影
+        )
     }
 
     private func arrivalHighlightCard(arrival: TrainArrival, directionLabel: String) -> some View {
@@ -363,7 +376,15 @@ struct ArrivalCard: View {
         .padding()
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)  // 边框
+                )
+                .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3)  // 阴影
+        )
     }
 
     private func directionBadge(for label: String) -> some View {
@@ -385,6 +406,334 @@ struct ArrivalCard: View {
             return formatter.string(from: date)
         }
         return timeString
+    }
+}
+
+struct CongestionCard: View {
+    let nameCN: String
+    let checkpoints: [Checkpoint]
+
+    private var updatedTime: String {
+        checkpoints.max(by: { $0.createdAt < $1.createdAt })?.createdAt ?? "N/A"
+    }
+
+    private func formatTime(_ timeString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX") // 避免不同地区日期解析错乱
+
+        // 判断是否含有 Z
+        if timeString.contains("Z") {
+            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        } else {
+            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        }
+
+        guard let date = formatter.date(from: timeString) else { return timeString }
+
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter.string(from: date)
+    }
+
+    private func crowdingLevel(for num: Int) -> Int {
+        switch num {
+        case 0...3: return 0
+        case 4...8: return 1
+        default:     return 2
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            headerSection()
+
+            VStack {
+                Spacer()
+                checkpointsGrid()
+                Spacer()
+                updateTimeSection()
+            }
+        }
+        .frame(height: 160)
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
+        )
+    }
+
+    private func headerSection() -> some View {
+        HStack {
+            Image(systemName: "shield.lefthalf.filled")
+                .foregroundColor(.blue)
+            Text("安检口状态监控")
+                .font(.headline).bold()
+            Spacer()
+        }
+    }
+
+    private func checkpointsGrid() -> some View {
+        let maxCount = min(checkpoints.count, 5)
+        let spacing: CGFloat = {
+            switch maxCount {
+            case 5: return 1      // 五个时非常紧凑
+            case 4: return 4      // 四个时略宽
+            default: return 8     // 其它正常间距
+            }
+        }()
+
+        return HStack(spacing: spacing) {
+            ForEach(checkpoints.prefix(5).enumerated().map { $0 }, id: \.element.id) { _, cp in
+                Group {
+                    if maxCount == 5 {
+                        CompactCheckpointBadge(
+                            id: String(cp.checkpointID),
+                            crowdLevel: crowdingLevel(for: cp.personNum)
+                        )
+                    } else {
+                        CheckpointBadge(
+                            id: String(cp.checkpointID),
+                            crowdLevel: crowdingLevel(for: cp.personNum)
+                        )
+                    }
+                }
+                .frame(width: maxCount == 5 ? 54 : 64)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, maxCount == 5 ? 0 : 8) // 保持垂直收紧逻辑
+    }
+
+    private func updateTimeSection() -> some View {
+        HStack {
+            Spacer()
+            HStack(spacing: 4) {
+                Image(systemName: "clock")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                Text(formatTime(updatedTime))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+
+struct CheckpointBadge: View {
+    let id: String
+    let crowdLevel: Int
+    private let minWidth: CGFloat = 60
+    private let maxWidth: CGFloat = 72
+    
+    private var statusColor: Color {
+        switch crowdLevel {
+        case 0: return .green
+        case 1: return .orange
+        default: return .red
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // 编号标识 - 优化尺寸比例
+            Text(id)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 22, height: 22)
+                .background(Circle().fill(Color.blue))
+                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 2)
+            
+            // 拥挤度指示器 - 增强视觉层次
+            HStack(spacing: 5) {
+                ForEach(0..<3) { index in
+                    Circle()
+                        .fill(index <= crowdLevel ? statusColor : Color.gray.opacity(0.15))
+                        .frame(width: index <= crowdLevel ? 12 : 10,
+                               height: index <= crowdLevel ? 12 : 10)
+                        .scaleEffect(index <= crowdLevel ? 1.0 : 0.9)
+                }
+            }
+            .padding(.horizontal, 6)
+            .frame(height: 16)
+        }
+        .padding(10)
+        .frame(minWidth: minWidth, maxWidth: maxWidth)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.18), lineWidth: 0.5)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 3, x: 0, y: 1)
+        )
+    }
+}
+
+struct CompactCheckpointBadge: View {
+    let id: String
+    let crowdLevel: Int
+    
+    private var statusColor: Color {
+        switch crowdLevel {
+        case 0: return .green
+        case 1: return .orange
+        default: return .red
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 6) {
+            // 编号标识
+            Text(id)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 18, height: 18)
+                .background(Circle().fill(Color.blue))
+                .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
+            
+            // 拥挤度指示器
+            HStack(spacing: 3) {
+                ForEach(0..<3) { index in
+                    Circle()
+                        .fill(index <= crowdLevel ? statusColor : Color.gray.opacity(0.15))
+                        .frame(width: index <= crowdLevel ? 10 : 8,
+                               height: index <= crowdLevel ? 10 : 8)
+                }
+            }
+            .padding(.horizontal, 2)
+            .frame(height: 14)
+        }
+        // 修改此处宽度（从54降为48），其他padding保持不变
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
+        .frame(width: 48) // 宽度从54降为48
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.18), lineWidth: 0.5)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 3, x: 0, y: 1)
+        )
+    }
+}
+
+
+// 拥挤度指示器组件
+struct CrowdLevelIndicator: View {
+    let level: Int
+    
+    private var statusText: String {
+        switch level {
+        case 0: return "畅通"
+        case 1: return "一般"
+        case 2: return "拥挤"
+        default: return "拥挤"
+        }
+    }
+    
+    private var statusIcon: String {
+        switch level {
+        case 0: return "checkmark.circle.fill"
+        case 1: return "clock.fill"
+        case 2: return "exclamationmark.circle.fill"
+        default: return "exclamationmark.circle.fill"
+        }
+    }
+    
+    private var statusColor: Color {
+        switch level {
+        case 0: return Color(.systemGreen)
+        case 1: return Color(.systemOrange)
+        default: return Color(.systemRed)
+        }
+    }
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            // 状态图标
+            Image(systemName: statusIcon)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(statusColor)
+            
+            // 状态文本
+            Text(statusText)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(statusColor)
+            
+            // 小圆点指示器
+            HStack(spacing: 3) {
+                ForEach(0..<3) { index in
+                    Circle()
+                        .fill(index <= level ? statusColor : Color.gray.opacity(0.2))
+                        .frame(width: 5, height: 5)
+                }
+            }
+            .padding(.leading, 2)
+        }
+    }
+}
+
+struct StationCongestionView: View {
+    let congestion: CongestionResponse
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("站点：\(congestion.nameCN)")
+                .font(.title2)
+                .bold()
+            
+            Text("旅行组：\(congestion.travelGroup)")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+
+            Divider()
+
+            ForEach(congestion.checkpoints) { checkpoint in
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("安检口ID: \(checkpoint.checkpointID)")
+                        .font(.headline)
+                    
+                    Text("关联ID: \(checkpoint.id.map { String($0) }.joined(separator: ", "))")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    HStack {
+                        Label("\(checkpoint.personNum) 人", systemImage: "person.3.fill")
+                            .foregroundColor(.blue)
+                        Spacer()
+                        Text(formatDate(checkpoint.createdAt))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+            }
+        }
+        .padding()
+    }
+
+    private func formatDate(_ isoString: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        if let date = formatter.date(from: isoString) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateStyle = .short
+            displayFormatter.timeStyle = .short
+            return displayFormatter.string(from: date)
+        }
+        return isoString
     }
 }
 
@@ -439,6 +788,17 @@ struct TrainVisualizationView: View {
             .background(Color(.secondarySystemBackground))
             .cornerRadius(8)
         }
+    }
+}
+
+extension MetroAPIService {
+    func fetchCongestionDetails(stationName: String) async throws -> CongestionResponse {
+        guard let url = URL(string: "http://127.0.0.1:5009/congestion_details?name_cn=\(stationName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") else {
+            throw URLError(.badURL)
+        }
+        
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode(CongestionResponse.self, from: data)
     }
 }
 
