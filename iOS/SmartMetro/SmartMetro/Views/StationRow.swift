@@ -122,6 +122,8 @@ struct StationRow: View {
     @State private var errorMessage: String?
     @State private var navigateToDetails = false
     @State private var showDetails = false
+    @State private var congestionResponse: CongestionResponse? = nil
+    @State private var isCongestionLoading = false
     @Namespace private var animationNamespace
     
     // 线路颜色配置
@@ -293,17 +295,44 @@ struct StationRow: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, minHeight: 150)
             } else {
+                // 1. 上行拥挤情况卡片
                 if !upCrowdingData.isEmpty {
                     crowdingCard(for: "上行", data: upCrowdingData)
                 }
+                
+                // 2. 下行拥挤情况卡片
                 if !downCrowdingData.isEmpty {
                     crowdingCard(for: "下行", data: downCrowdingData)
                 }
+                
+                // 3. 列车到达时间卡片
                 if !trainArrivals.isEmpty {
                     arrivalCard
                 }
+                
+                // 4. 安检口拥挤情况卡片（放在最前面）
+                if let congestionResponse = congestionResponse {
+                    CongestionCard(
+                        nameCN: congestionResponse.nameCN,
+                        checkpoints: congestionResponse.checkpoints
+                    )
+                } else if isCongestionLoading {
+                    loadingCard(title: "正在加载安检口数据")
+                }
             }
         }
+    }
+
+    private func loadingCard(title: String) -> some View {
+        VStack {
+            ProgressView()
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 80)
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
     
     private func crowdingCard(for path: String, data: [CarriageCrowding]) -> some View {
@@ -389,6 +418,8 @@ struct StationRow: View {
         ArrivalCard(arrivals: trainArrivals)
     }
     
+    
+    
     // MARK: - 组件
     private func lineBadge(line: Int, config: (color: Color, bgColor: Color, name: String), isSelected: Bool) -> some View {
         Text(config.name)
@@ -457,46 +488,52 @@ struct StationRow: View {
     
     private func loadData(for line: Int) {
         isLoading = true
+        isCongestionLoading = true
         upCrowdingData = []
         downCrowdingData = []
         trainArrivals = []
+        congestionResponse = nil
         errorMessage = nil
         
         Task {
             do {
+                // 并行加载三种数据
                 async let crowdingTask = MetroAPIService.shared.fetchCrowding(for: line)
                 async let arrivalsTask = MetroAPIService.shared.fetchNextTrains(for: station.nameCN)
+                async let congestionTask = MetroAPIService.shared.fetchCongestionDetails(stationName: station.nameCN)
                 
-                let (crowdingDict, arrivalsResponse) = await (try crowdingTask, try arrivalsTask)
+                let (crowdingDict, arrivalsResponse, congestionData) = await (
+                    try crowdingTask,
+                    try arrivalsTask,
+                    try congestionTask
+                )
                 
-                // 提取上下行拥挤度数据
+                // 处理拥挤度数据
                 let upData = crowdingDict["path_0"] ?? []
                 let downData = crowdingDict["path_1"] ?? []
                 
-                // 获取到站时间数据 - 合并上下行
+                // 处理到站时间数据
                 let lineKey = "Line_\(line)"
                 guard let lineArrivals = arrivalsResponse.lines[lineKey] else {
                     throw NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "未找到线路\(line)的列车信息"])
                 }
                 
-                // 合并上下行列车数据
                 let allArrivals = lineArrivals.up_direction + lineArrivals.down_direction
                 
-                withAnimation {
+                // 更新UI
+                await MainActor.run {
                     self.upCrowdingData = upData
                     self.downCrowdingData = downData
                     self.trainArrivals = allArrivals
+                    self.congestionResponse = congestionData
                     self.isLoading = false
+                    self.isCongestionLoading = false
                 }
                 
-                // 调试打印
-                print("拥挤度数据 - 上行: \(upData.count)条, 下行: \(downData.count)条")
-                print("到站时间数据 - 上行: \(lineArrivals.up_direction.count)班, 下行: \(lineArrivals.down_direction.count)班")
-                print("合并后列车总数: \(allArrivals.count)班")
-                
             } catch {
-                withAnimation {
+                await MainActor.run {
                     self.isLoading = false
+                    self.isCongestionLoading = false
                     self.errorMessage = "数据加载失败: \(error.localizedDescription)"
                 }
                 print("数据加载错误: \(error)")
