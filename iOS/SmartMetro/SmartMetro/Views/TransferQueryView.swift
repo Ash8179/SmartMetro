@@ -87,7 +87,8 @@ struct TransferQueryView: View {
     
     private var searchButton: some View {
         Button(action: {
-            Task { await fetchRoute() }
+            UIApplication.shared.endEditing()   // 收起键盘
+            Task { await fetchRoute() }         // 执行查询
         }) {
             HStack {
                 Image(systemName: "magnifyingglass")
@@ -126,7 +127,8 @@ struct TransferQueryView: View {
         
         guard let fromEncoded = fromStation.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let toEncoded = toStation.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "http://127.0.0.1:5001/Dijkstra?from=\(fromEncoded)&to=\(toEncoded)") else {
+              let url = URL(string: EnvironmentSwitch.baseURL + "/smartmetro/dijkstra?from=\(fromEncoded)&to=\(toEncoded)")
+        else {
             errorMessage = "无效的站点名称"
             return
         }
@@ -151,83 +153,72 @@ struct RouteDetailsView: View {
     let data: RouteData
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {  // 调整整体间距更紧凑
             routeSummary
                 .padding(.horizontal)
 
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 12) {
-                    ForEach(data.path) { step in
-                        RouteStepView(step: step)
-                            .cardStyle()
+                VStack(spacing: 0) {  // 去掉多余的间距，靠 Divider 区隔
+                    ForEach(data.path.indices, id: \.self) { index in
+                        RouteStepView(step: data.path[index])
+                            .padding(.vertical, 8)  // 单步上下留 8pt 空隙
+                        
+                        // 除最后一个外，添加 Divider
+                        if index != data.path.indices.last {
+                            Divider()
+                        }
                     }
                 }
                 .padding(.horizontal)
             }
         }
-        .padding(.vertical)
+        .padding(.vertical, 8)  // 更紧凑的外层 padding
     }
 
     // MARK: 摘要视图
     private var routeSummary: some View {
-        let capsuleWidth: CGFloat = 100  // 可根据文字内容调整
-
-        return VStack(spacing: 12) {
-            // —————— 第一行：出发 走路小人 到达 ——————
+        VStack(spacing: 8) {
+            // 第一行：出发站 -> 小人 -> 到达站
             HStack {
                 InfoCapsule(text: data.from_station.cn,
                             systemImage: "mappin.and.ellipse",
                             color: .blue)
-                    .frame(width: capsuleWidth, alignment: .leading)
-
-                Spacer()
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 Capsule()
-                    .fill(Color(.systemGray5))
+                    .fill(Color(.systemOrange).opacity(0.1))
                     .frame(width: 32, height: 32)
                     .overlay(
                         Image(systemName: "figure.walk")
                             .foregroundColor(.orange)
                     )
 
-                Spacer()
-
                 InfoCapsule(text: data.to_station.cn,
                             systemImage: "mappin",
                             color: .red)
-                    .frame(width: capsuleWidth, alignment: .trailing)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .frame(height: 32)  // 保持高度统一
+            .frame(height: 32)
 
-            // —————— 第二行：总时间    换乘次数 ——————
-            HStack(spacing: 8) {
+            // 第二行：总时间 + 换乘次数
+            HStack {
                 InfoCapsule(text: "\(data.total_time) min",
                             systemImage: "clock.fill",
                             color: .green)
-                    .frame(width: capsuleWidth, alignment: .leading)
-
-                Spacer()
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 InfoCapsule(text: "换乘：\(data.transfer_count) 次",
                             systemImage: "arrow.triangle.swap",
                             color: .purple)
-                    .frame(width: capsuleWidth, alignment: .trailing)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-                )
-        )
+        .padding(.vertical, 8)
+        .padding(.horizontal)
     }
 }
 
-// MARK: —————— Capsule 组件 ——————
+// MARK: - Capsule 组件
 private struct InfoCapsule: View {
     let text: String
     let systemImage: String
@@ -241,9 +232,15 @@ private struct InfoCapsule: View {
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 10)
+        .frame(minWidth: 60, maxWidth: .infinity) // 弹性宽度
+        .frame(height: 32) // 固定高度
         .background(color.opacity(0.1))
         .foregroundColor(color)
         .clipShape(Capsule())
+        .overlay(
+            Capsule()
+                .stroke(color.opacity(0.3), lineWidth: 0.5)
+        )
     }
 }
 
@@ -267,53 +264,75 @@ private extension View {
 // MARK: - 路线步骤
 struct RouteStepView: View {
     let step: RouteStep
-
+    private let lineConfig: [Int: (color: Color, bgColor: Color, name: String)] = [
+        1: (Color(hex: "e3002b"), Color(hex: "fdeae9"), "1"),
+        2: (Color(hex: "8cc220"), Color(hex: "EBF7EC"), "2"),
+        3: (Color(hex: "fcd600"), Color(hex: "fffee5"), "3"),
+        4: (Color(hex: "461d84"), Color(hex: "f1ebf4"), "4"),
+        5: (Color(hex: "944d9a"), Color(hex: "e8d2f0"), "5"),
+        6: (Color(hex: "d40068"), Color(hex: "ffcae4"), "6"),
+        7: (Color(hex: "ed6f00"), Color(hex: "ffcc99"), "7"),
+        8: (Color(hex: "0094d8"), Color(hex: "60b7d4"), "8"),
+        9: (Color(hex: "87caed"), Color(hex: "85C6DA"), "9"),
+        10: (Color(hex: "c6afd4"), Color(hex: "e0c5f0"), "10"),
+        11: (Color(hex: "871c2b"), Color(hex: "BB8866"), "11"),
+        12: (Color(hex: "007a60"), Color(hex: "99CBC1"), "12"),
+        13: (Color(hex: "e999c0"), Color(hex: "f4b8d2"), "13"),
+        14: (Color(hex: "616020"), Color(hex: "9a982f"), "14"),
+        15: (Color(hex: "c8b38e"), Color(hex: "f9e7c8"), "15"),
+        16: (Color(hex: "98d1c0"), Color(hex: "C6E8DF"), "16"),
+        160: (Color(hex: "98d1c0"), Color(hex: "C6E8DF"), "16"),
+        17: (Color(hex: "bb796f"), Color(hex: "ebd6d3"), "17"),
+        18: (Color(hex: "C09453"), Color(hex: "C09453"), "18"),
+        41: (Color(hex: "b5b6b6"), Color(hex: "f2f7f7"), "浦江线"),
+        51: (Color(hex: "cccccc"), Color(hex: "dddddd"), "机场联络线")
+    ]
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if step.transfer {
-                TransferStepView(step: step)
+                TransferStepView(step: step, lineConfig: lineConfig)
             } else {
-                SegmentStepView(step: step)
+                SegmentStepView(step: step, lineConfig: lineConfig)
             }
         }
-        .cardStyle()  // 复用之前定义的白底+边框+阴影
+        .padding()
     }
 }
 
 // MARK: - 乘坐地铁信息
 struct SegmentStepView: View {
     let step: RouteStep
-
+    let lineConfig: [Int: (color: Color, bgColor: Color, name: String)]
+    
+    var lineInfo: (color: Color, bgColor: Color, name: String) {
+        lineConfig[step.line_id ?? 0] ?? (Color.primary, Color.secondary, "未知线路")
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             // 第一行：线路标题
-            Text("Line \(step.line_id ?? 0)")
+            Text(displayLineName(for: step.line_id))
                 .font(.headline)
-
-            // 第二行：起讫站点 Capsule + 箭头 Capsule
+                .foregroundColor(lineInfo.color)
+                .padding(.bottom, 4)
+            
+            // 第二行：起止站点 + 箭头
             HStack {
-                InfoCapsule(
-                    text: step.from_station?.cn ?? "",
-                    systemImage: "mappin.and.ellipse",
-                    color: .blue
-                )
-                Spacer()
-                // 箭头 Capsule
-                Capsule()
-                    .fill(Color(.systemGray5))
-                    .frame(width: 32, height: 32)
-                    .overlay(
-                        Image(systemName: "arrow.right")
-                            .foregroundColor(.secondary)
-                    )
-                Spacer()
-                InfoCapsule(
-                    text: step.to_station?.cn ?? "",
-                    systemImage: "mappin",
-                    color: .red
-                )
+                Text(step.from_station?.cn ?? "")
+                    .font(.callout).bold()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Image(systemName: "arrow.right")
+                    .foregroundColor(.secondary)
+                
+                Text(step.to_station?.cn ?? "")
+                    .font(.callout).bold()  // 中文稍大些
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
-
+            
+            Divider()
+            
             // 第三行：时间信息
             HStack {
                 Text("\(step.segment_time ?? 0) 分钟")
@@ -324,22 +343,50 @@ struct SegmentStepView: View {
                     .foregroundColor(.secondary)
             }
         }
+        .padding(.vertical, 8)  // 更紧凑
+        .padding(.horizontal, 12)
+    }
+    
+    private func displayLineName(for id: Int?) -> String {
+        if id == 160 {
+            return "Line 16 大站车"
+        }
+        return "Line \(id ?? 0)"
     }
 }
 
 // MARK: - 换乘信息
 struct TransferStepView: View {
     let step: RouteStep
-
+    let lineConfig: [Int: (color: Color, bgColor: Color, name: String)]
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // 第一行：Transfer 标题
-            Text("Line \(step.from_line ?? 0) → Line \(step.to_line ?? 0)")
-                .font(.headline)
-
-            // 第二行省略 Capsule，直接展示一次性换乘时间
+        VStack(alignment: .leading, spacing: 8) {
+            // 第一行：换乘信息 居中
             HStack {
-                Text("\(step.transfer_time ?? 0) 分钟")
+                Spacer()
+                Text("换乘：")
+                    .font(.headline)
+                
+                Text(displayLineName(for: step.from_line))
+                    .font(.headline)
+                    .foregroundColor(lineConfig[step.from_line ?? 0]?.color ?? .primary)
+
+                Image(systemName: "arrow.right")
+                    .foregroundColor(.secondary)
+                
+                Text(displayLineName(for: step.to_line))
+                    .font(.headline)
+                    .foregroundColor(lineConfig[step.to_line ?? 0]?.color ?? .primary)
+                Spacer()
+            }
+            .padding(.bottom, 4)
+
+            Divider()
+
+            // 第二行时间信息
+            HStack {
+                Text("换乘时间：\(step.transfer_time ?? 0) 分钟")
                     .font(.subheadline)
                 Spacer()
                 Text("累计 \(step.cumulative_time) 分钟")
@@ -347,6 +394,20 @@ struct TransferStepView: View {
                     .foregroundColor(.secondary)
             }
         }
+        .padding(.vertical, 8)    // 与SegmentStepView一致
+        .padding(.horizontal, 12) // 与SegmentStepView一致
+    }
+    
+    private func displayLineName(for id: Int?) -> String {
+        if id == 160 {
+            return "Line 16"
+        }
+        return "Line \(id ?? 0)"
     }
 }
 
+extension UIApplication {
+    func endEditing() {
+        sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}

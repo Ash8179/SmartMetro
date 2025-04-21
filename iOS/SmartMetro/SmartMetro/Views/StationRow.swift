@@ -1,3 +1,10 @@
+//
+//  StationRow.swift
+//  SmartMetro
+//
+//  Created by 张文瑜 on 15/3/25.
+//
+
 import SwiftUI
 
 // MARK: - 流式布局组件
@@ -231,7 +238,7 @@ struct StationRow: View {
             }) {
                 Text("更多信息")
                     .font(.caption2)  // 更小，不突出
-                    .foregroundColor(.secondary)  // 淡灰色，降低吸引力
+                    .foregroundColor(.secondary)  // 淡灰色
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color(.systemGray5))

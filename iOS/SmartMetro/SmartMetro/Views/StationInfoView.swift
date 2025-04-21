@@ -4,6 +4,7 @@
 //
 //  Created by 张文瑜 on 17/4/25.
 //
+
 import SwiftUI
 
 struct StationInfoView: View {
@@ -91,19 +92,19 @@ struct StationInfoView: View {
     }
 
     private func loadFirstLastTimes() async throws -> FirstLastTimeResponse {
-        guard let url = URL(string: "http://127.0.0.1:5006/fltime/all") else {
+        guard let url = URL(string: "\(EnvironmentSwitch.baseURL)/smartmetro/fltime/all") else {
             throw URLError(.badURL)
         }
         let (data, _) = try await URLSession.shared.data(from: url)
+            print("Response Data: \(String(data: data, encoding: .utf8) ?? "No Data")")
         return try JSONDecoder().decode(FirstLastTimeResponse.self, from: data)
     }
-    
     private func loadAllStationOrders() async throws -> [Int: StationOrderResponse] {
         var combinedData: [Int: StationOrderResponse] = [:]
         let allLines = Array(1...18) + [41, 51]
         
         for line in allLines {
-            guard let url = URL(string: "http://127.0.0.1:5007/station/order?line=\(line)") else {
+            guard let url = URL(string: "\(EnvironmentSwitch.baseURL)/smartmetro/station/order?line=\(line)") else {
                 continue
             }
             do {

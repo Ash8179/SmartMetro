@@ -1,3 +1,10 @@
+//
+//  MetroDetailView.swift
+//  SmartMetro
+//
+//  Created by 张文瑜 on 25/3/25.
+//
+
 import SwiftUI
 
 // MARK: - 错误视图组件
@@ -39,8 +46,8 @@ struct CrowdLevelBadge: View {
 
     private var icon: String {
         switch level {
-        case 0: return "person"
-        case 1: return "person.2"
+        case 0: return "person.fill"
+        case 1: return "person.2.fill"
         case 2: return "person.3.fill"
         default: return "questionmark"
         }
@@ -288,12 +295,17 @@ struct ArrivalCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
+                Image(systemName: "calendar.badge.clock")
+                    .foregroundColor(.blue)
+                
                 Text("列车到达时间")
-                    .font(.headline)
+                    .font(.headline).bold()
 
                 Text("(共\(arrivals.count)班)")
                     .font(.caption)
                     .foregroundColor(.gray)
+                
+                Spacer()
             }
 
             Divider()
@@ -400,7 +412,10 @@ struct ArrivalCard: View {
 
     private func formatTime(_ timeString: String) -> String {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")  // 避免地区时区问题
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)      // 可根据后端设定调整
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+
         if let date = formatter.date(from: timeString) {
             formatter.dateFormat = "HH:mm"
             return formatter.string(from: date)
@@ -453,7 +468,7 @@ struct CongestionCard: View {
                 updateTimeSection()
             }
         }
-        .frame(height: 160)
+        .frame(height: 160) // 保证整体高度，比例才对
         .padding()
         .background(Color(.systemBackground))
         .cornerRadius(16)
@@ -611,10 +626,10 @@ struct CompactCheckpointBadge: View {
             .padding(.horizontal, 2)
             .frame(height: 14)
         }
-        // 修改此处宽度（从54降为48），其他padding保持不变
+        // 仅修改此处宽度（从54降为48）
         .padding(.vertical, 8)
         .padding(.horizontal, 4)
-        .frame(width: 48) // 宽度从54降为48
+        .frame(width: 48)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color(.systemBackground))
@@ -692,7 +707,7 @@ struct StationCongestionView: View {
                 .font(.title2)
                 .bold()
             
-            Text("旅行组：\(congestion.travelGroup)")
+            Text("Travel Group：\(congestion.travelGroup)")
                 .font(.subheadline)
                 .foregroundColor(.gray)
 
@@ -793,17 +808,36 @@ struct TrainVisualizationView: View {
 
 extension MetroAPIService {
     func fetchCongestionDetails(stationName: String) async throws -> CongestionResponse {
-        guard let url = URL(string: "http://127.0.0.1:5009/congestion_details?name_cn=\(stationName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") else {
+        // Safely encode station name
+        guard let encodedName = stationName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            print("Failed to encode station name: \(stationName)")
             throw URLError(.badURL)
         }
         
-        let (data, _) = try await URLSession.shared.data(from: url)
+        // Build URL
+        let urlString = "\(EnvironmentSwitch.baseURL)/smartmetro/congestion_details?name_cn=\(encodedName)"
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL: \(urlString)")
+            throw URLError(.badURL)
+        }
+        
+        print("Fetching congestion details from URL: \(url.absoluteString)")
+        
+        // Perform network request
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        // Optional: check server response
+        if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+            print("Server responded with status: \(httpResponse.statusCode)")
+            throw URLError(.badServerResponse)
+        }
+
+        // Decode JSON
         return try JSONDecoder().decode(CongestionResponse.self, from: data)
     }
 }
 
 // MARK: - 预览
-
 #Preview {
     NavigationStack {
         StationDetailView(station: MetroStation(

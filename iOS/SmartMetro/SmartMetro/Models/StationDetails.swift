@@ -15,7 +15,7 @@ class StationDetailsViewModel: ObservableObject {
     @Published var hasAttemptedLoad = false
     
     func fetchStationDetails(nameCN: String) async {
-        print("⏳ [ViewModel] Starting fetch for: \(nameCN)")
+        print("[ViewModel] Starting fetch for: \(nameCN)")
         hasAttemptedLoad = true
         isLoading = true
         
@@ -31,18 +31,18 @@ class StationDetailsViewModel: ObservableObject {
         }
         
         guard let encodedName = nameCN.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-            print("❌ [ViewModel] Failed to encode name")
+            print("[ViewModel] Failed to encode name")
             DispatchQueue.main.async {
                 self.errorMessage = "Invalid station name"
             }
             return
         }
         
-        let urlString = "http://127.0.0.1:5008/station_details?name_cn=\(encodedName)"
-        print("🔗 [ViewModel] Request URL: \(urlString)")
+        let urlString = "\(EnvironmentSwitch.baseURL)/smartmetro/station_details?name_cn=\(encodedName)"
+        print("[ViewModel] Request URL: \(urlString)")
         
         guard let url = URL(string: urlString) else {
-            print("❌ [ViewModel] Invalid URL")
+            print("[ViewModel] Invalid URL")
             DispatchQueue.main.async {
                 self.errorMessage = "Invalid URL"
             }
@@ -50,27 +50,27 @@ class StationDetailsViewModel: ObservableObject {
         }
         
         do {
-            print("🌐 [ViewModel] Starting network request...")
+            print("[ViewModel] Starting network request...")
             let (data, response) = try await URLSession.shared.data(from: url)
             
             if let httpResponse = response as? HTTPURLResponse {
-                print("📡 [ViewModel] HTTP Status: \(httpResponse.statusCode)")
+                print("[ViewModel] HTTP Status: \(httpResponse.statusCode)")
                 guard (200...299).contains(httpResponse.statusCode) else {
                     throw URLError(.badServerResponse)
                 }
             }
             
-            print("📦 [ViewModel] Received data: \(String(data: data, encoding: .utf8)?.prefix(100) ?? "nil")...")
+            print("[ViewModel] Received data: \(String(data: data, encoding: .utf8)?.prefix(100) ?? "nil")...")
             
             // 直接解码为 StationDetails
             let decoded = try JSONDecoder().decode(StationDetails.self, from: data)
             
             DispatchQueue.main.async {
                 self.stationDetails = decoded
-                print("✅ [ViewModel] Data loaded successfully")
+                print("[ViewModel] Data loaded successfully")
             }
         } catch {
-            print("❌ [ViewModel] Error: \(error)")
+            print("[ViewModel] Error: \(error)")
             DispatchQueue.main.async {
                 self.errorMessage = error.localizedDescription
             }

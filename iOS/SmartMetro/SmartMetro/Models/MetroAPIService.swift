@@ -48,7 +48,9 @@ class MetroAPIService {
 
     // 获取车厢拥挤度数据
     func fetchCrowding(for lineNumber: Int) async throws -> [String: [CarriageCrowding]] {
-        guard let url = URL(string: "http://localhost:5004/api/crowding/batch?line_number=\(lineNumber)") else {
+        let urlString = EnvironmentSwitch.baseURL + "/smartmetro/crowding/batch?line_number=\(lineNumber)"
+        guard let url = URL(string: urlString) else {
+            print("Error: Invalid URL - \(urlString)")  // Print the malformed URL if it fails
             throw URLError(.badURL)
         }
 
@@ -64,10 +66,19 @@ class MetroAPIService {
 
     // 获取到站时间数据
     func fetchNextTrains(for stationName: String) async throws -> TrainArrivalResponse {
-        guard let urlEncoded = stationName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "http://localhost:5005/api/next_trains?station_name=\(urlEncoded)") else {
+        guard let encodedName = stationName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            print("Failed to encode station name: \(stationName)")
             throw URLError(.badURL)
         }
+
+        let fullURLString = EnvironmentSwitch.baseURL + "/smartmetro/next_trains?station_name=\(encodedName)"
+        
+        guard let url = URL(string: fullURLString) else {
+            print("Invalid URL: \(fullURLString)")
+            throw URLError(.badURL)
+        }
+
+        print("Fetching from URL: \(url.absoluteString)")
 
         let (data, _) = try await URLSession.shared.data(from: url)
 

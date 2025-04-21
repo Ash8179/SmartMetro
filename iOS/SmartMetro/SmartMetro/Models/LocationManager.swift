@@ -1,3 +1,10 @@
+//
+//  LocationManager.swift
+//  SmartMetro
+//
+//  Created by 张文瑜 on 16/3/25.
+//
+
 import CoreLocation
 
 class LocationManager: NSObject, ObservableObject {
@@ -9,34 +16,39 @@ class LocationManager: NSObject, ObservableObject {
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.requestWhenInUseAuthorization()
-        manager.startUpdatingLocation()
-        
-        // 随机生成一个上海市中心附近的坐标
+
+        #if targetEnvironment(simulator)
+        // Use mock location when running on Simulator
         let randomLatitude = Double.random(in: 31.200...31.260)
         let randomLongitude = Double.random(in: 121.420...121.500)
         self.location = CLLocationCoordinate2D(latitude: randomLatitude, longitude: randomLongitude)
-
-        print("📍 Mock Location Set: \(randomLatitude), \(randomLongitude)")
+        print("Simulator: Mock Location Set: \(randomLatitude), \(randomLongitude)")
+        #else
+        // Use real GPS location on device
+        manager.startUpdatingLocation()
+        print("Device: Real Location updates started.")
+        #endif
     }
 }
 
-// MARK: - CLLocationManagerDelegate 扩展
 extension LocationManager: CLLocationManagerDelegate {
-    /// 位置更新回调
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        #if !targetEnvironment(simulator) // Skip updating if mock location is used
         guard let newLocation = locations.last else { return }
         DispatchQueue.main.async {
             self.location = newLocation.coordinate
-            print("Updated Location: \(self.location!.latitude), \(self.location!.longitude)")
+            print("Device Updated Location: \(self.location!.latitude), \(self.location!.longitude)")
         }
+        #endif
     }
-    
-    /// 监听用户权限更改
+
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         switch manager.authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
             print("Location authorized, starting updates...")
+            #if !targetEnvironment(simulator)
             manager.startUpdatingLocation()
+            #endif
         case .denied, .restricted:
             print("Location access denied.")
             location = nil
@@ -44,7 +56,7 @@ extension LocationManager: CLLocationManagerDelegate {
             print("Location permission not determined, requesting...")
             manager.requestWhenInUseAuthorization()
         @unknown default:
-            print("Unknown authorization status")
+            print("Unknown authorization status.")
         }
     }
 }

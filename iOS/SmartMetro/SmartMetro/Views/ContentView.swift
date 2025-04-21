@@ -1,3 +1,10 @@
+//
+//  ContentView.swift
+//  SmartMetro
+//
+//  Created by 张文瑜 on 16/3/25.
+//
+
 import SwiftUI
 import CoreLocation
 
@@ -8,7 +15,7 @@ struct ContentView: View {
     @State private var errorMessage: String?
     @State private var showingTransferQuery = false
     @State private var showingTravelInfo = false
-    @State private var showingTestStation = false // 新增测试状态
+    @State private var showingTestStation = false
 
     var body: some View {
         NavigationStack {
@@ -40,7 +47,7 @@ struct ContentView: View {
             travelInfoButton
         }
         .padding(.horizontal, 28)  // Extra side margins for breathing room
-        .padding(.vertical, 14)    // Slightly taller vertical padding for elegance
+        .padding(.vertical, 14)    // Slightly taller vertical padding
     }
 
     // MARK: - Transfer Query Button
@@ -58,7 +65,7 @@ struct ContentView: View {
             .foregroundColor(.blue)
             .frame(maxWidth: .infinity, minHeight: 52)          // Minimum height increased for visual balance
             .background(Color(.systemGray6))
-            .cornerRadius(16)                                   // Softer corners for modern look
+            .cornerRadius(16)                                   // Softer corners
             .shadow(color: .gray.opacity(0.1), radius: 4, x: 0, y: 3)
         }
     }
@@ -76,9 +83,9 @@ struct ContentView: View {
                     .font(.system(size: 22))                    // Icon size enlarged
             }
             .foregroundColor(.blue)
-            .frame(maxWidth: .infinity, minHeight: 52)          // Minimum height increased for visual balance
+            .frame(maxWidth: .infinity, minHeight: 52)          // Minimum height increased
             .background(Color(.systemGray6))
-            .cornerRadius(16)                                   // Softer corners for modern look
+            .cornerRadius(16)                                   // Softer corners
             .shadow(color: .gray.opacity(0.1), radius: 4, x: 0, y: 3)
         }
     }
@@ -140,7 +147,11 @@ struct ContentView: View {
         let longitude = location.longitude
 
         do {
-            let url = URL(string: "http://127.0.0.1:5002/nearest_stations?lat=\(latitude)&lng=\(longitude)")!
+            guard let encodedLatitude = String(latitude).addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let encodedLongitude = String(longitude).addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let url = URL(string: "\(EnvironmentSwitch.baseURL)/smartmetro/nearest_stations?lat=\(encodedLatitude)&lng=\(encodedLongitude)") else {
+                throw URLError(.badURL)
+            }
             let (data, _) = try await URLSession.shared.data(from: url)
 
             let decoder = JSONDecoder()

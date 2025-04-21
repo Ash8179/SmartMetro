@@ -4,14 +4,15 @@
 //
 //  Created by 张文瑜 on 1/4/25.
 //
+
 import Foundation
 
 struct MetroStationAPIResponseItem: Codable {
-    let allStations: String  // camelCase in Swift
+    let allStations: String
     let line: Int
     
     enum CodingKeys: String, CodingKey {
-        case allStations = "all_stations"  // maps JSON to Swift
+        case allStations = "all_stations"
         case line
     }
 }
@@ -20,7 +21,7 @@ class MetroStationService: ObservableObject {
     @Published var allLines: [LineInfo] = []
     
     func fetchStations() {
-        guard let url = URL(string: "http://127.0.0.1:5003/allstations") else { return }
+        guard let url = URL(string: EnvironmentSwitch.baseURL + "smartmetro/allstations") else { return }
         
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let data = data {

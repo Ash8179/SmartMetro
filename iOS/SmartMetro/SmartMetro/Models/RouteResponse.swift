@@ -37,7 +37,6 @@ struct RouteStep: Decodable, Identifiable {
     let to_line: Int?
     let transfer_time: Int?
     
-    // Handle the typo in JSON ("to_station" vs "to_station")
     private enum CodingKeys: String, CodingKey {
         case cumulative_time, transfer, from_station, line_id, segment_time, to_station = "to_station"
         case from_line, message, to_line, transfer_time

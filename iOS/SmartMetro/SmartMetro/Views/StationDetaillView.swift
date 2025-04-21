@@ -224,11 +224,11 @@ struct StationDetailsView: View {
                                                 }
 
                                                 Text(desc)
-                                                    .font(.subheadline)  // 比 caption 大一号，阅读友好
+                                                    .font(.subheadline)
                                                     .foregroundColor(.primary)  // 改用主文本颜色
                                                     .fixedSize(horizontal: false, vertical: true)
                                                     .padding(.top, 6)
-                                                    //.padding(.bottom, 2)
+                                                    //.padding(.bottom, 2) //先不加了
 
                                                 Divider()
                                                     .padding(.top, 8)

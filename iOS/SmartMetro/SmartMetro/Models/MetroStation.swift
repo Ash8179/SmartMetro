@@ -1,4 +1,10 @@
-// MetroStation.swift
+//
+//  MetroStation.swift
+//  SmartMetro
+//
+//  Created by 张文瑜 on 16/3/25.
+//
+
 struct MetroStation: Decodable, Identifiable {
     let id: Int
     let nameCN: String

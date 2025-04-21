@@ -1,3 +1,10 @@
+//
+//  StationResponse.swift
+//  SmartMetro
+//
+//  Created by 张文瑜 on 25/3/25.
+//
+
 import Foundation
 
 struct StationResponse: Decodable {
