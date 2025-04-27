@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import SwiftfulLoadingIndicators
+import FluidGradient
 
 // MARK: - 流式布局组件
 struct FlexibleView<Data: Collection, Content: View>: View where Data.Element: Hashable {
@@ -104,6 +106,7 @@ private struct SizePreferenceKey: PreferenceKey {
 
 // MARK: - 颜色扩展
 extension Color {
+    // 初始化颜色（Hex）
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var rgbValue: UInt64 = 0
@@ -115,7 +118,79 @@ extension Color {
         
         self.init(red: r, green: g, blue: b)
     }
+    
+    // 混合颜色（RGB加权平均）
+    func blend(with color: Color, amount: CGFloat) -> Color {
+        let from = UIColor(self)
+        let to = UIColor(color)
+        
+        var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+        var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+        
+        from.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+        to.getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+        
+        return Color(
+            red: Double(r1 + (r2 - r1) * amount),
+            green: Double(g1 + (g2 - g1) * amount),
+            blue: Double(b1 + (b2 - b1) * amount)
+        )
+    }
 }
+
+
+struct AnimatedLineBackground: View {
+    let baseColor: Color
+    let lineID: Int?
+    @Binding var isVisible: Bool
+
+    private let lineConfig: [Int: (color: Color, bgColor: Color, name: String)] = [
+        1: (Color(hex: "e3002b"), Color(hex: "fdeae9"), "1"),
+        2: (Color(hex: "8cc220"), Color(hex: "EBF7EC"), "2"),
+        3: (Color(hex: "fcd600"), Color(hex: "fffee5"), "3"),
+        4: (Color(hex: "461d84"), Color(hex: "f1ebf4"), "4"),
+        5: (Color(hex: "944d9a"), Color(hex: "e8d2f0"), "5"),
+        6: (Color(hex: "d40068"), Color(hex: "ffcae4"), "6"),
+        7: (Color(hex: "ed6f00"), Color(hex: "ffcc99"), "7"),
+        8: (Color(hex: "0094d8"), Color(hex: "60b7d4"), "8"),
+        9: (Color(hex: "87caed"), Color(hex: "85C6DA"), "9"),
+        10: (Color(hex: "c6afd4"), Color(hex: "e0c5f0"), "10"),
+        11: (Color(hex: "871c2b"), Color(hex: "BB8866"), "11"),
+        12: (Color(hex: "007a60"), Color(hex: "99CBC1"), "12"),
+        13: (Color(hex: "e999c0"), Color(hex: "f4b8d2"), "13"),
+        14: (Color(hex: "616020"), Color(hex: "9a982f"), "14"),
+        15: (Color(hex: "c8b38e"), Color(hex: "f9e7c8"), "15"),
+        16: (Color(hex: "98d1c0"), Color(hex: "C6E8DF"), "16"),
+        17: (Color(hex: "bb796f"), Color(hex: "ebd6d3"), "17"),
+        18: (Color(hex: "C09453"), Color(hex: "C09453"), "18"),
+        41: (Color(hex: "b5b6b6"), Color(hex: "f2f7f7"), "浦江线"),
+        51: (Color(hex: "cccccc"), Color(hex: "dddddd"), "机场联络线")
+    ]
+
+    var body: some View {
+        let lineColor = lineConfig[lineID ?? -1]?.color ?? baseColor
+        let blobs = [
+            lineColor,
+            lineColor.blend(with: .white, amount: 0.3),
+            .white
+        ]
+        let highlights = [
+            lineColor.blend(with: .white, amount: 0.5).opacity(0.3)
+        ]
+
+        return FluidGradient(
+            blobs: blobs,
+            highlights: highlights,
+            speed: 1.0,
+            blur: 0.75,
+            isVisible: $isVisible
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .allowsHitTesting(false)
+    }
+}
+
+
 
 // MARK: - 站点行视图
 struct StationRow: View {
@@ -131,7 +206,14 @@ struct StationRow: View {
     @State private var showDetails = false
     @State private var congestionResponse: CongestionResponse? = nil
     @State private var isCongestionLoading = false
+    @State private var backgroundColor: Color = Color(.systemBackground)
+    @State private var animatedBackgroundVisible = false
     @Namespace private var animationNamespace
+    
+    
+    private var shouldShowAnimatedBackground: Bool {
+        selectedLine != nil && !isLoading && isExpanded
+    }
     
     // 线路颜色配置
     private let lineConfig: [Int: (color: Color, bgColor: Color, name: String)] = [
@@ -159,6 +241,7 @@ struct StationRow: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // --- 内容视图保持不变 ---
             headerView
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
@@ -176,15 +259,50 @@ struct StationRow: View {
                     }
                 }
             }
+            // --- 内容视图结束 ---
         }
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        // --- 背景和动画 ---
+        .background(
+            ZStack {
+                // 默认背景
+                Color(.systemBackground)
+                    .opacity(selectedLine == nil ? 1 : 0)
+
+                if let selected = selectedLine, let config = lineConfig[selected] {
+                    ZStack {
+                        Color.clear
+                            .background(.ultraThinMaterial)
+                            .background(
+                                AnimatedLineBackground(
+                                    baseColor: config.bgColor,
+                                    lineID: selected, // 加这一行
+                                    isVisible: .constant(true)
+                                )
+                            )
+                    }
+                    .opacity(1)
+                    .transition(.opacity.combined(with: .scale(scale: 1.02)))
+                } else {
+                    Color.clear.opacity(0)
+                }
+            }
+            .animation(selectedLine != nil
+                       ? .spring(response: 0.6, dampingFraction: 0.85)
+                       : .easeOut(duration: 0.3),
+                       value: selectedLine)
+        )
+        // --- 背景和动画结束 ---
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous)) // 裁剪应用在 VStack 上
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4) // 阴影应用在 VStack 上
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        // 保留其他视图（如展开/折叠）的动画，这些动画【不】应该是 3 秒
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isExpanded)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showDetails)
+         // 移除之前可能错误添加在 VStack 上的针对 selectedLine 的长动画
     }
+
+
 
     // MARK: - Header
     private var headerView: some View {
@@ -268,38 +386,47 @@ struct StationRow: View {
         .padding(.bottom, 16)
     }
     
+    // MARK: - Line Selector (检查并确保无长动画干扰)
     private var lineSelectorView: some View {
         HStack(spacing: 12) {
             ForEach(station.associatedLines, id: \.self) { line in
                 Button(action: {
+                    // 按钮的 Action 不变，它改变 selectedLine
                     if selectedLine == line {
-                        // 如果已经是选中，再次点击则收回
                         selectedLine = nil
                     } else {
                         selectedLine = line
                         loadData(for: line)
                     }
+                    // 注意：这里不需要 withAnimation，因为按钮外观的动画
+                    // 是由 SwiftUI 自动处理的，或者由下面可能存在的 .animation 修饰符处理
                 }) {
                     if let config = lineConfig[line] {
                         Text(config.name)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(selectedLine == line ? .white : config.color)
-                            .frame(width: 48, height: 36) // fixed size for all buttons
+                            .frame(width: 48, height: 36)
                             .background(selectedLine == line ? config.color : Color(.systemGray5))
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            // 确保按钮本身应用的是快速动画（如果需要显式动画）
+                            // 如果不加，SwiftUI 会尝试使用默认动画，通常是快速的
+                            // .animation(.easeInOut(duration: 0.2), value: selectedLine == line) // 示例：显式快速动画
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
+                // 确保没有从父视图继承过来的 3 秒动画覆盖按钮的快速动画
             }
         }
-        .frame(maxWidth: .infinity)  // Stretch container to center
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, 20)
+        // 不在此处添加基于 selectedLine 的长动画
     }
+
     
     private func lineDetailView(for line: Int) -> some View {
         VStack(spacing: 16) {
             if isLoading {
-                ProgressView()
+                LoadingIndicator(animation: .text)
                     .frame(maxWidth: .infinity, minHeight: 150)
             } else {
                 // 1. 上行拥挤情况卡片
@@ -565,6 +692,7 @@ struct StationRow: View {
         return total / data.count
     }
 }
+
 
 // MARK: - test
 struct StationRow_Previews: PreviewProvider {

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftfulLoadingIndicators
 
 struct StationDetailsView: View {
     let nameCN: String
@@ -74,7 +75,7 @@ struct StationDetailsView: View {
 
             ScrollView {
                 if viewModel.isLoading {
-                    ProgressView("加载中...")
+                    LoadingIndicator(animation: .text)
                         .padding()
                 } else if let _ = viewModel.stationDetails {
                     VStack(alignment: .leading, spacing: 16) {

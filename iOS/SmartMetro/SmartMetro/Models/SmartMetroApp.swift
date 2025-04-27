@@ -11,7 +11,8 @@ import SwiftUI
 struct SmartMetroApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SplashPage()
+            //ContentView()
         }
     }
 }

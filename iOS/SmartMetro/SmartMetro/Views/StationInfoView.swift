@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftfulLoadingIndicators
 
 struct StationInfoView: View {
     @State private var firstLastTimes: [FirstLastTimeData] = []
@@ -14,10 +15,12 @@ struct StationInfoView: View {
     @State private var errorMessage: String?
     @State private var selectedTab = 0
     @State private var selectedLine = 1
+    @State private var searchText = ""
     
     var body: some View {
         NavigationStack {
             VStack {
+                
                 Picker("View Mode", selection: $selectedTab) {
                     Text("首末班车查询").tag(0)
                     Text("运行路线查询").tag(1)
@@ -39,8 +42,7 @@ struct StationInfoView: View {
 
                 Group {
                     if isLoading {
-                        ProgressView()
-                            .scaleEffect(1.5)
+                        LoadingIndicator(animation: .text)
                             .padding()
                     } else if let error = errorMessage {
                         Text("Error: \(error)")
@@ -135,7 +137,7 @@ struct FirstLastTrainCard: View {
                         .foregroundColor(config.color)
                         .font(.system(size: 18))
 
-                    Text("线路 \(config.name)")
+                    Text(displayLineName(for: config.name))
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.primary)
                 }
@@ -238,6 +240,17 @@ struct FirstLastTrainCard: View {
         .cornerRadius(10)
         .shadow(color: config.color.opacity(0.08), radius: 1, x: 0, y: 1)
     }
+    
+    private func displayLineName(for lineName: String) -> String {
+        switch lineName {
+        case "浦江线":
+            return "浦江线"
+        case "机场联络线":
+            return "机场联络线"
+        default:
+            return "Line \(lineName)"
+        }
+    }
 }
 
 struct FirstLastTrainView: View {
@@ -275,7 +288,7 @@ struct StationOrderView: View {
                 if sortedKeys.count == 1, let pathId = sortedKeys.first, let stations = grouped[pathId] {
                     if let config = MetroLineConfig.getConfig(for: lineID) {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Line \(lineID)")
+                            Text(displayLineName(for: lineID))
                                 .font(.title2.bold())  // Increased size
                                 .foregroundColor(config.color)
                                 .padding(.bottom, 6)  // Adjusted padding for balance
@@ -347,6 +360,17 @@ struct StationOrderView: View {
             .padding(.vertical)
         }
     }
+    
+    private func displayLineName(for lineID: Int) -> String {
+        switch lineID {
+        case 41:
+            return "浦江线"
+        case 51:
+            return "机场联络线"
+        default:
+            return "Line \(lineID)"
+        }
+    }
 }
 
 struct StationLineRow: View {
@@ -394,6 +418,52 @@ struct StationLineRow: View {
                 .fill(Color(.systemBackground))
                 .shadow(color: .black.opacity(0.05), radius: 1, x: 0, y: 1)
         )
+    }
+}
+
+struct SearchBar: View {
+
+    @Binding var search: String
+
+    @Environment(\.colorScheme) var colorScheme
+
+    var isLigth: Bool {
+        colorScheme == .light
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+
+            // Search Bar
+            HStack {
+
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.gray)
+
+                TextField("Search", text: $search)
+                    .textFieldStyle(PlainTextFieldStyle())
+
+
+                if !search.isEmpty {
+                    Button(action: {
+                        search = ""
+                    }, label: {
+                        Image(systemName: "xmark.circle")
+                    })
+                    .buttonStyle(PlainButtonStyle())
+                }
+
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal)
+            .background(Color.white)
+            .foregroundColor(Color.black)
+            .cornerRadius(20)
+            .shadow(color: (isLigth ? Color.black.opacity(0.1) : Color.white.opacity(0.2)), radius: 5, x: 5, y: 5)
+            .shadow(color: (isLigth ? Color.black.opacity(0.1) : Color.white.opacity(0.2)), radius: 5, x: -1, y: -1)
+
+        }
+
     }
 }
 

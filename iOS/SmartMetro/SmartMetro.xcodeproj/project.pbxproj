@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C099F0572DB89617004E46B1 /* SwiftfulLoadingIndicators in Frameworks */ = {isa = PBXBuildFile; productRef = C099F0562DB89617004E46B1 /* SwiftfulLoadingIndicators */; };
+		C0E0148F2DB9323500EBC6D9 /* FluidGradient in Frameworks */ = {isa = PBXBuildFile; productRef = C0E0148E2DB9323500EBC6D9 /* FluidGradient */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		C058CB172D927C860081C730 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,9 +34,34 @@
 		C058CB202D927C860081C730 /* SmartMetroUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SmartMetroUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C0422FB82D9A8569008A2B88 /* Exceptions for "SmartMetro" folder in "SmartMetroTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/AllStationResponse.swift,
+				Models/MetroStation.swift,
+				Models/StationResponse.swift,
+			);
+			target = C058CB152D927C860081C730 /* SmartMetroTests */;
+		};
+		C0422FB92D9A8569008A2B88 /* Exceptions for "SmartMetro" folder in "SmartMetroUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/AllStationResponse.swift,
+				Models/MetroStation.swift,
+				Models/StationResponse.swift,
+			);
+			target = C058CB1F2D927C860081C730 /* SmartMetroUITests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C058CB082D927C850081C730 /* SmartMetro */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C0422FB82D9A8569008A2B88 /* Exceptions for "SmartMetro" folder in "SmartMetroTests" target */,
+				C0422FB92D9A8569008A2B88 /* Exceptions for "SmartMetro" folder in "SmartMetroUITests" target */,
+			);
 			path = SmartMetro;
 			sourceTree = "<group>";
 		};
@@ -52,6 +82,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C099F0572DB89617004E46B1 /* SwiftfulLoadingIndicators in Frameworks */,
+				C0E0148F2DB9323500EBC6D9 /* FluidGradient in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +144,8 @@
 			);
 			name = SmartMetro;
 			packageProductDependencies = (
+				C099F0562DB89617004E46B1 /* SwiftfulLoadingIndicators */,
+				C0E0148E2DB9323500EBC6D9 /* FluidGradient */,
 			);
 			productName = SmartMetro;
 			productReference = C058CB062D927C850081C730 /* SmartMetro.app */;
@@ -171,7 +205,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1620;
+				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					C058CB052D927C840081C730 = {
 						CreatedOnToolsVersion = 16.2;
@@ -195,6 +229,10 @@
 			);
 			mainGroup = C058CAFD2D927C840081C730;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C099F0552DB89617004E46B1 /* XCRemoteSwiftPackageReference "SwiftfulLoadingIndicators" */,
+				C0E0148D2DB9323500EBC6D9 /* XCLocalSwiftPackageReference "SmartMetro/FluidGradient-main" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C058CB072D927C850081C730 /* Products */;
 			projectDirPath = "";
@@ -304,6 +342,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 9FGHY2U8WT;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -367,6 +406,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 9FGHY2U8WT;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -396,7 +436,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SmartMetro/Preview Content\"";
-				DEVELOPMENT_TEAM = 9FGHY2U8WT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Location services are required to find the nearest stations";
@@ -427,7 +466,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SmartMetro/Preview Content\"";
-				DEVELOPMENT_TEAM = 9FGHY2U8WT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Location services are required to find the nearest stations";
@@ -456,7 +494,6 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9FGHY2U8WT;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				MARKETING_VERSION = 1.0;
@@ -475,7 +512,6 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9FGHY2U8WT;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				MARKETING_VERSION = 1.0;
@@ -493,7 +529,6 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9FGHY2U8WT;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Tongji-University.SmartMetroUITests";
@@ -510,7 +545,6 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9FGHY2U8WT;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Tongji-University.SmartMetroUITests";
@@ -562,6 +596,36 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C0E0148D2DB9323500EBC6D9 /* XCLocalSwiftPackageReference "SmartMetro/FluidGradient-main" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "SmartMetro/FluidGradient-main";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C099F0552DB89617004E46B1 /* XCRemoteSwiftPackageReference "SwiftfulLoadingIndicators" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftfulThinking/SwiftfulLoadingIndicators.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C099F0562DB89617004E46B1 /* SwiftfulLoadingIndicators */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C099F0552DB89617004E46B1 /* XCRemoteSwiftPackageReference "SwiftfulLoadingIndicators" */;
+			productName = SwiftfulLoadingIndicators;
+		};
+		C0E0148E2DB9323500EBC6D9 /* FluidGradient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FluidGradient;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C058CAFE2D927C840081C730 /* Project object */;
 }

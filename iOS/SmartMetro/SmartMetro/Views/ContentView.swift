@@ -7,9 +7,11 @@
 
 import SwiftUI
 import CoreLocation
+import SwiftfulLoadingIndicators
+import FluidGradient
 
 struct ContentView: View {
-    @StateObject private var locationManager = LocationManager()
+    @EnvironmentObject var locationManager: LocationManager
     @State private var stations: [MetroStation] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -17,25 +19,38 @@ struct ContentView: View {
     @State private var showingTravelInfo = false
     @State private var showingTestStation = false
 
+    init(forPreview: Bool = false) {
+        if forPreview {
+            self._stations = State(initialValue: [
+                MetroStation(id: 1, nameCN: "人民广场", nameEN: "People's Square", travelGroup: "1", distanceM: 150, lineInfo: LineInfo(lineNumber: 1, allStations: []), associatedLines: [1, 2, 8]),
+                MetroStation(id: 2, nameCN: "南京西路", nameEN: "West Nanjing Road", travelGroup: "2", distanceM: 300, lineInfo: LineInfo(lineNumber: 2, allStations: []), associatedLines: [2])
+            ])
+            self._isLoading = State(initialValue: false)
+            self._errorMessage = State(initialValue: nil)
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 6) {
-                Divider()
-                buttonSection
-                Divider()
-                mainContentView
-            }
-            .navigationTitle("上海地铁")
-            .task {
-                if stations.isEmpty && errorMessage == nil {
-                    await loadData()
+            ZStack {
+                VStack(spacing: 6) {
+                    Divider()
+                    buttonSection
+                    Divider()
+                    mainContentView
+                }
+                .navigationTitle("上海地铁")
+                .task {
+                    if stations.isEmpty && errorMessage == nil {
+                        await loadData()
+                    }
                 }
             }
         }
         .sheet(isPresented: $showingTransferQuery) {
             TransferQueryView()
         }
-        .sheet(isPresented: $showingTravelInfo) { // Sheet for TravelInfo
+        .sheet(isPresented: $showingTravelInfo) {
             StationInfoView()
         }
     }
@@ -93,7 +108,9 @@ struct ContentView: View {
     @ViewBuilder
     private var mainContentView: some View {
         if isLoading {
-            ProgressView("Locating...")
+            VStack(spacing: 12) {
+                LoadingIndicator(animation: .text)
+            }
         } else if let error = errorMessage {
             errorView(message: error)
         } else if stations.isEmpty {
@@ -115,7 +132,8 @@ struct ContentView: View {
 
     private func errorView(message: String) -> some View {
         ContentUnavailableView(
-            label: { Label("Fail to load", systemImage: "wifi.exclamationmark") },
+            label: { Label("Fail to load", systemImage: "wifi.exclamationmark")
+            },
             description: { Text(message) },
             actions: {
                 Button("Retry") {
@@ -175,132 +193,31 @@ struct ContentView: View {
 // MARK: - 预览提供器
 struct ContentView_Previews: PreviewProvider {
     
-    static let mockLineInfo = LineInfo(
-        lineNumber: 10,
-        allStations: ["虹桥火车站", "虹桥2号航站楼", "虹桥1号航站楼", "上海动物园"]
-    )
-    
-    static let transferLineInfo = LineInfo(
-        lineNumber: 8,
-        allStations: ["市光路", "嫩江路", "翔殷路", "黄兴公园"]
-    )
-
     static var previews: some View {
         Group {
-            PreviewWrapper(stations: [
-                MetroStation(
-                    id: 1,
-                    nameCN: "同济大学",
-                    nameEN: "Tongji University",
-                    travelGroup: "244",
-                    distanceM: 250,
-                    lineInfo: mockLineInfo,
-                    associatedLines: [11]
-                ),
-                MetroStation(
-                    id: 2,
-                    nameCN: "四平路",
-                    nameEN: "Siping Road",
-                    travelGroup: "189",
-                    distanceM: 560,
-                    lineInfo: transferLineInfo,
-                    associatedLines: [8, 10]
-                )
-            ])
-            .previewDisplayName("换乘站点")
-            
-            PreviewWrapper(stations: [
-                MetroStation(
-                    id: 3,
-                    nameCN: "南京东路",
-                    nameEN: "East Nanjing Road",
-                    travelGroup: "10",
-                    distanceM: 800,
-                    lineInfo: mockLineInfo,
-                    associatedLines: [10]
-                )
-            ])
-            .previewDisplayName("单线路站点")
-            
-            PreviewWrapper(isLoading: true)
-                .previewDisplayName("加载中")
-            
-            PreviewWrapper(errorMessage: "定位服务不可用")
-                .previewDisplayName("错误状态")
-            
-            PreviewWrapper(stations: [])
-                .previewDisplayName("空数据")
-        }
-        .previewLayout(.sizeThatFits)
-    }
-
-    struct PreviewWrapper: View {
-        @State private var stations: [MetroStation]
-        @State private var isLoading: Bool
-        @State private var errorMessage: String?
-        @State private var showingTransferQuery = false
-        @State private var showingLineQuery = false
-        @State private var showingTravelInfo = false
-
-        init(stations: [MetroStation] = [], isLoading: Bool = false, errorMessage: String? = nil) {
-            _stations = State(initialValue: stations)
-            _isLoading = State(initialValue: isLoading)
-            _errorMessage = State(initialValue: errorMessage)
-        }
-
-        var body: some View {
-            NavigationStack {
-                VStack(spacing: 6) {
-                    Divider()
-                    HStack(spacing: 15) {
-                        Button(action: { showingTransferQuery = true }) {
-                            VStack(spacing: 4) {
-                                Text("🚆")
-                                Text("换乘查询")
-                                    .font(.system(size: 12))
-                            }
-                            .foregroundColor(.blue)
-                            .padding(10)
-                            .frame(maxWidth: .infinity)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
-                        }
-                        Button(action: { showingLineQuery = true }) {
-                            VStack(spacing: 4) {
-                                Text("🗺️")
-                                Text("线路查询")
-                                    .font(.system(size: 12))
-                            }
-                            .foregroundColor(.blue)
-                            .padding(10)
-                            .frame(maxWidth: .infinity)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
-                        }
-                    }
-                    .padding(.vertical, 10)
-                    Divider()
-                    if isLoading {
-                        ProgressView("Locating...")
-                    } else if let errorMessage {
-                        ContentUnavailableView(
-                            label: { Label("Fail to load", systemImage: "wifi.exclamationmark") },
-                            description: { Text(errorMessage) }
-                        )
-                    } else if stations.isEmpty {
-                        ContentUnavailableView(
-                            label: { Label("No Metro Station Found", systemImage: "tram.fill") },
-                            description: { Text("No metro stations within 5 kilometers.") }
-                        )
-                    } else {
-                        List(stations.prefix(5)) { station in
-                            StationRow(station: station)
-                        }
-                        .listStyle(.plain)
-                    }
+            ContentView(forPreview: true)
+                .environmentObject(LocationManager())
+                .previewDisplayName("正常状态（带测试数据）")
+                .task {
+                    // 模拟加载成功
                 }
-                .navigationTitle("上海地铁")
-            }
+                .onAppear {
+                    // 手动注入一些站点数据
+                }
+
+            ContentView()
+                .environmentObject(LocationManager())
+                .previewDisplayName("加载中")
+                .onAppear {
+                    // 模拟加载中状态
+                }
+
+            ContentView()
+                .environmentObject(LocationManager())
+                .previewDisplayName("错误状态")
+                .onAppear {
+                    // 模拟错误状态
+                }
         }
     }
 }

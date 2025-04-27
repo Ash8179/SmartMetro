@@ -6,42 +6,54 @@
 //
 
 import SwiftUI
+import SwiftfulLoadingIndicators
 
 struct TransferQueryView: View {
+    @Namespace private var searchNamespace
+    @State private var showSearchBar = true
     @State private var fromStation = ""
     @State private var toStation = ""
     @State private var routeData: RouteData?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var reachedTopOnce = false
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 10) {
-                inputSection
+            VStack(spacing: 0) {
+                if showSearchBar {
+                    inputSection
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 10)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .padding(.bottom, 8) // 恢复原样
+                        .animation(.spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0.2), value: showSearchBar)
+                }
                 
-                if isLoading {
-                    ProgressView("正在查询...")
-                        .padding()
-                } else if let error = errorMessage {
-                    errorView(message: error)
-                } else if let data = routeData {
-                    ScrollView {
-                        LazyVStack(spacing: 10) {
-                            RouteDetailsView(data: data)
-                        }
-                        .padding()
+                Group {
+                    if isLoading {
+                        LoadingIndicator(animation: .text).padding()
+                    } else if let error = errorMessage {
+                        errorView(message: error)
+                    } else if let data = routeData {
+                        resultsView(data: data)
+                    } else {
+                        Spacer()
                     }
-                } else {
-                    Spacer()
                 }
             }
-            .padding()
+            .animation(.easeInOut, value: showSearchBar)
             .navigationTitle("换乘查询")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("关闭") { dismiss() }
+                }
+            }
+            .onChange(of: routeData) {
+                withAnimation {
+                    showSearchBar = routeData == nil
                 }
             }
         }
@@ -82,6 +94,53 @@ struct TransferQueryView: View {
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                         )
                 )
+        }
+    }
+    
+    private func resultsView(data: RouteData) -> some View {
+        ScrollView {
+            GeometryReader { geo in
+                Color.clear
+                    .preference(key: ScrollOffsetPreferenceKey.self, value: geo.frame(in: .named("scroll")).minY)
+            }
+            .frame(height: 0)
+
+            RouteDetailsView(data: data)
+                .padding()
+        }
+        .coordinateSpace(name: "scroll")
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+            // 第一次到达顶部，标记但不展开
+            if value >= 0 && !reachedTopOnce {
+                reachedTopOnce = true
+                return
+            }
+
+            // 滚动离开顶部，重置标记
+            if value < -10 {
+                reachedTopOnce = false
+            }
+
+            // 只有“已经到达顶部”且“继续上拉超过阈值”才展开搜索栏
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.45)) {
+                if reachedTopOnce && value > 30 {
+                    showSearchBar = true
+                } else if value < -40 {
+                    showSearchBar = false
+                }
+            }
+        }
+        .refreshable {
+            resetSearch()
+        }
+    }
+    
+    private func resetSearch() {
+        withAnimation {
+            routeData = nil
+            fromStation = ""
+            toStation = ""
+            errorMessage = nil
         }
     }
     
@@ -215,6 +274,14 @@ struct RouteDetailsView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal)
+    }
+}
+
+// MARK: - 偏移偏好键
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value += nextValue()
     }
 }
 
@@ -410,4 +477,8 @@ extension UIApplication {
     func endEditing() {
         sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
+}
+
+#Preview {
+    TransferQueryView()
 }

@@ -12,7 +12,7 @@ struct RouteResponse: Decodable {
     let data: RouteData?
 }
 
-struct RouteData: Decodable {
+struct RouteData: Decodable, Equatable {
     let path: [RouteStep]
     let total_time: Int
     let from_station: Station
@@ -20,7 +20,7 @@ struct RouteData: Decodable {
     let transfer_count: Int
 }
 
-struct RouteStep: Decodable, Identifiable {
+struct RouteStep: Decodable, Identifiable, Equatable {
     var id = UUID()
     let cumulative_time: Int
     let transfer: Bool
@@ -43,7 +43,7 @@ struct RouteStep: Decodable, Identifiable {
     }
 }
 
-struct Station: Decodable {
+struct Station: Decodable, Equatable {
     let cn: String
     let en: String
 }

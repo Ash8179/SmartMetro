@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftfulLoadingIndicators
 
 // MARK: - 错误视图组件
 struct ErrorView: View {
@@ -157,7 +158,7 @@ struct StationDetailView: View {
     private func lineDetailView(for line: Int) -> some View {
         Group {
             if isLoading {
-                ProgressView()
+                LoadingIndicator(animation: .text)
                     .frame(maxWidth: .infinity, minHeight: 200)
             } else {
                 VStack(spacing: 20) {
@@ -837,17 +838,3 @@ extension MetroAPIService {
     }
 }
 
-// MARK: - 预览
-#Preview {
-    NavigationStack {
-        StationDetailView(station: MetroStation(
-            id: 1,
-            nameCN: "人民广场",
-            nameEN: "People's Square",
-            travelGroup: "市中心",
-            distanceM: 350,
-            lineInfo: LineInfo(lineNumber: 2, allStations: ["静安寺", "南京西路", "人民广场", "南京东路"]),
-            associatedLines: [1, 2, 8]
-        ))
-    }
-}
