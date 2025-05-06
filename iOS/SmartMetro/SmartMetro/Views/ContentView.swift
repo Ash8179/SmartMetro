@@ -131,25 +131,105 @@ struct ContentView: View {
     }
 
     private func errorView(message: String) -> some View {
-        ContentUnavailableView(
-            label: { Label("Fail to load", systemImage: "wifi.exclamationmark")
-            },
-            description: { Text(message) },
-            actions: {
-                Button("Retry") {
-                    Task {
-                        await loadData()
+        GeometryReader { geo in
+            VStack {
+                Spacer(minLength: geo.size.height * 0.1)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Error")
+                        .font(.largeTitle)
+                        .bold()
+
+                    VStack(spacing: 6) {
+                        Label {
+                            Text("Fail to load")
+                                .font(.title3)
+                                .bold()
+                        } icon: {
+                            Image(systemName: "wifi.exclamationmark")
+                                .font(.title2)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
+
+                        Text(message)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+
+                        Button {
+                            Task {
+                                await loadData()
+                            }
+                        } label: {
+                            Text("Retry")
+                                .font(.footnote)
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.top, 2)
                     }
+                    .frame(maxWidth: .infinity)
                 }
+                .frame(width: geo.size.width * 0.8)
+
+                HStack {
+                    Text("Alternatively...")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+                .frame(width: geo.size.width * 0.8)
+                .padding(.top, 10)
+
+                PassengerRunnerGameView()
+                    .frame(height: 300)
+                    .padding(.top, -40)
+
+                Spacer()
             }
-        )
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .background(Color(.systemBackground))
     }
 
     private var emptyView: some View {
-        ContentUnavailableView(
-            label: { Label("No Metro Station Found", systemImage: "tram.fill") },
-            description: { Text("No metro stations within 5 kilometers.") }
-        )
+        GeometryReader { geo in
+            VStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Error")
+                        .font(.largeTitle)
+                        .bold()
+
+                    VStack(spacing: 6) {
+                        Label {
+                            Text("No Metro Station Found")
+                                .font(.title3)
+                                .bold()
+                        } icon: {
+                            Image(systemName: "tram.fill")
+                                .font(.title2)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
+
+                        Text("No metro stations within 5 kilometers.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .frame(width: geo.size.width * 0.8)
+                .padding(.bottom, 0)
+
+                PassengerRunnerGameView()
+                    .frame(height: 300)
+                    .frame(width: geo.size.width * 0.8)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .position(x: geo.size.width / 2, y: geo.size.height / 2)
+        }
+        .background(Color(.systemBackground))
     }
 
     private func loadData() async {
