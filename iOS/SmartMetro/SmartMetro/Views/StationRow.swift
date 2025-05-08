@@ -275,7 +275,7 @@ struct StationRow: View {
                             .background(
                                 AnimatedLineBackground(
                                     baseColor: config.bgColor,
-                                    lineID: selected, // 加这一行
+                                    lineID: selected,
                                     isVisible: .constant(true)
                                 )
                             )
@@ -292,14 +292,12 @@ struct StationRow: View {
                        value: selectedLine)
         )
         // --- 背景和动画结束 ---
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous)) // 裁剪应用在 VStack 上
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4) // 阴影应用在 VStack 上
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        // 保留其他视图（如展开/折叠）的动画，这些动画【不】应该是 3 秒
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isExpanded)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showDetails)
-         // 移除之前可能错误添加在 VStack 上的针对 selectedLine 的长动画
     }
 
 
@@ -356,7 +354,7 @@ struct StationRow: View {
             }) {
                 Text("更多信息")
                     .font(.caption2)  // 更小，不突出
-                    .foregroundColor(.secondary)  // 淡灰色
+                    .foregroundColor(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color(.systemGray5))
@@ -386,20 +384,17 @@ struct StationRow: View {
         .padding(.bottom, 16)
     }
     
-    // MARK: - Line Selector (检查并确保无长动画干扰)
+    // MARK: - Line Selector
     private var lineSelectorView: some View {
         HStack(spacing: 12) {
             ForEach(station.associatedLines, id: \.self) { line in
                 Button(action: {
-                    // 按钮的 Action 不变，它改变 selectedLine
                     if selectedLine == line {
                         selectedLine = nil
                     } else {
                         selectedLine = line
                         loadData(for: line)
                     }
-                    // 注意：这里不需要 withAnimation，因为按钮外观的动画
-                    // 是由 SwiftUI 自动处理的，或者由下面可能存在的 .animation 修饰符处理
                 }) {
                     if let config = lineConfig[line] {
                         Text(config.name)
@@ -408,9 +403,6 @@ struct StationRow: View {
                             .frame(width: 48, height: 36)
                             .background(selectedLine == line ? config.color : Color(.systemGray5))
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            // 确保按钮本身应用的是快速动画（如果需要显式动画）
-                            // 如果不加，SwiftUI 会尝试使用默认动画，通常是快速的
-                            // .animation(.easeInOut(duration: 0.2), value: selectedLine == line) // 示例：显式快速动画
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -419,7 +411,6 @@ struct StationRow: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 20)
-        // 不在此处添加基于 selectedLine 的长动画
     }
 
     
@@ -481,6 +472,26 @@ struct StationRow: View {
 
                 Spacer()
 
+                // 判断方向：上行对应 "up"，下行对应 "down"
+                let directionKey = path == "上行" ? "up" : "down"
+
+                // 查找符合条件的最近列车
+                if let latestTrain = trainArrivals.first(where: {
+                    $0.line_id == selectedLine &&
+                    $0.direction.lowercased() == directionKey
+                }) {
+                    Text(latestTrain.description)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                } else {
+                    Text("无列车信息")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                // 拥挤度徽章
                 if let averageLevel = averageCrowdingLevel(for: path) {
                     CrowdLevelBadge(level: averageLevel)
                 }
