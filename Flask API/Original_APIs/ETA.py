@@ -119,7 +119,7 @@ def get_next_trains():
 
     conn = get_db_connection()
     try:
-        with conn.cursor() as cursor:
+        with conn.cursor(buffered=True, dictionary=True) as cursor:
             # 查询所有同名换乘站的记录
             cursor.execute("""
                 SELECT path_id, station_id, station_order FROM station_path_order 
@@ -153,17 +153,20 @@ def get_next_trains():
                     if train_line_id != target_line_id:
                         continue
 
+                    # 计算方向（station_id 大于 next_station_id 为上行，小于为下行）
+                    direction = "up" if train['station_id'] > train['next_station_id'] else "down"
+
+                    # 查询终点站描述（往xx方向）
                     cursor.execute("""
-                        SELECT station_order FROM station_path_order 
-                        WHERE path_id = %s AND station_id = %s
-                    """, (path_id, train['next_station_id']))
-                    next_station_result = cursor.fetchone()
+                        SELECT description FROM train_service_order 
+                        WHERE path_id = %s AND line_id = %s AND direction = %s
+                    """, (path_id, train_line_id, direction))
+                    description_result = cursor.fetchone()
 
-                    if not next_station_result:
-                        continue
-
-                    next_order = next_station_result['station_order']
-                    direction = "up" if next_order < target_order else "down"
+                    if description_result:
+                        description = description_result['description']
+                    else:
+                        description = "未知终点站"
 
                     total_travel_time = calculate_travel_time(
                         conn, path_id, train['next_station_id'], target_station_id
@@ -177,11 +180,13 @@ def get_next_trains():
                     arrivals.append({
                         "train_number": train['train_number'],
                         "direction": direction,
+                        "description": description,  # 增加终点站描述
                         "expected_arrival_time": arrival_time.strftime('%Y-%m-%d %H:%M:%S'),
                         "path_id": train['path_id'],
                         "line_id": train_line_id
                     })
 
+                # 按到达时间排序，分别取上下行前两个
                 up_trains = sorted(
                     [t for t in arrivals if t['direction'] == "up"],
                     key=lambda x: x['expected_arrival_time']
@@ -192,17 +197,20 @@ def get_next_trains():
                     key=lambda x: x['expected_arrival_time']
                 )[:2]
 
-                # 用线路编号作为返回字典的Key
-                result[f"Line_{target_line_id}"] = {
-                    "up_direction": up_trains,
-                    "down_direction": down_trains
-                }
+                line_key = f"Line_{target_line_id}"
+                if line_key not in result:
+                    result[line_key] = {
+                        "up_direction": up_trains,
+                        "down_direction": down_trains
+                    }
 
             return jsonify({
                 "station_name": station_name,
                 "lines": result
             })
-
+    except Exception as e:
+        logger.error(f"获取下一班列车信息出错: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
 
