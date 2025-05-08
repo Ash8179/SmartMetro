@@ -36,6 +36,7 @@ struct TrainArrival: Decodable, Identifiable {
     var id: String { train_number }
     let train_number: String
     let direction: String
+    let description: String
     let expected_arrival_time: String
     let path_id: Int
     let line_id: Int
