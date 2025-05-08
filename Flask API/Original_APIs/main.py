@@ -688,6 +688,7 @@ def get_next_trains():
     conn = get_db_connection()
     try:
         with conn.cursor(buffered=True, dictionary=True) as cursor:
+            # 查询所有同名换乘站的记录
             cursor.execute("""
                 SELECT path_id, station_id, station_order FROM station_path_order 
                 WHERE name_cn = %s
@@ -705,6 +706,7 @@ def get_next_trains():
                 target_order = target_station['station_order']
                 target_line_id = target_station_id // 100
 
+                # 查询该线路的实时列车
                 cursor.execute("""
                     SELECT train_number, station_id, next_station_id, timestamp, path_id 
                     FROM train_realtime_status 
@@ -719,22 +721,24 @@ def get_next_trains():
                     if train_line_id != target_line_id:
                         continue
 
+                    # 计算方向（station_id 大于 next_station_id 为上行，小于为下行）
+                    direction = "up" if train['station_id'] > train['next_station_id'] else "down"
+
+                    # 查询终点站描述（往xx方向）
                     cursor.execute("""
-                        SELECT station_order FROM station_path_order 
-                        WHERE path_id = %s AND station_id = %s
-                    """, (path_id, train['next_station_id']))
-                    next_station_result = cursor.fetchone()
+                        SELECT description FROM train_service_order 
+                        WHERE path_id = %s AND line_id = %s AND direction = %s
+                    """, (path_id, train_line_id, direction))
+                    description_result = cursor.fetchone()
 
-                    if not next_station_result:
-                        continue
+                    if description_result:
+                        description = description_result['description']
+                    else:
+                        description = "未知终点站"
 
-                    next_order = next_station_result['station_order']
-                    direction = "up" if next_order > target_order else "down"
-
-                    if (direction == "up" and next_order <= target_order) or (direction == "down" and next_order >= target_order):
-                        continue
-
-                    total_travel_time = calculate_travel_time(conn, path_id, train['next_station_id'], target_station_id)
+                    total_travel_time = calculate_travel_time(
+                        conn, path_id, train['next_station_id'], target_station_id
+                    )
 
                     if total_travel_time is None:
                         continue
@@ -744,11 +748,13 @@ def get_next_trains():
                     arrivals.append({
                         "train_number": train['train_number'],
                         "direction": direction,
+                        "description": description,  # 增加终点站描述
                         "expected_arrival_time": arrival_time.strftime('%Y-%m-%d %H:%M:%S'),
                         "path_id": train['path_id'],
                         "line_id": train_line_id
                     })
 
+                # 按到达时间排序，分别取上下行前两个
                 up_trains = sorted(
                     [t for t in arrivals if t['direction'] == "up"],
                     key=lambda x: x['expected_arrival_time']
