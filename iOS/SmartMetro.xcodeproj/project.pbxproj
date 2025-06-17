@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		C099F0572DB89617004E46B1 /* SwiftfulLoadingIndicators in Frameworks */ = {isa = PBXBuildFile; productRef = C099F0562DB89617004E46B1 /* SwiftfulLoadingIndicators */; };
 		C0E0148F2DB9323500EBC6D9 /* FluidGradient in Frameworks */ = {isa = PBXBuildFile; productRef = C0E0148E2DB9323500EBC6D9 /* FluidGradient */; };
+		C0E5795B2DF9769F00644AD4 /* font in Frameworks */ = {isa = PBXBuildFile; productRef = C0E5795A2DF9769F00644AD4 /* font */; };
+		C0E579DD2DF9797200644AD4 /* Neumorphic in Frameworks */ = {isa = PBXBuildFile; productRef = C0E579DC2DF9797200644AD4 /* Neumorphic */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,8 +41,10 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Models/AllStationResponse.swift,
+				Models/MapDetailService.swift,
 				Models/MetroStation.swift,
 				Models/StationResponse.swift,
+				Views/MapView.swift,
 			);
 			target = C058CB152D927C860081C730 /* SmartMetroTests */;
 		};
@@ -48,10 +52,19 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Models/AllStationResponse.swift,
+				Models/MapDetailService.swift,
 				Models/MetroStation.swift,
 				Models/StationResponse.swift,
+				Views/MapView.swift,
 			);
 			target = C058CB1F2D927C860081C730 /* SmartMetroUITests */;
+		};
+		C0E578882DF969CE00644AD4 /* Exceptions for "SmartMetro" folder in "SmartMetro" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C058CB052D927C840081C730 /* SmartMetro */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -59,6 +72,7 @@
 		C058CB082D927C850081C730 /* SmartMetro */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				C0E578882DF969CE00644AD4 /* Exceptions for "SmartMetro" folder in "SmartMetro" target */,
 				C0422FB82D9A8569008A2B88 /* Exceptions for "SmartMetro" folder in "SmartMetroTests" target */,
 				C0422FB92D9A8569008A2B88 /* Exceptions for "SmartMetro" folder in "SmartMetroUITests" target */,
 			);
@@ -82,6 +96,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0E579DD2DF9797200644AD4 /* Neumorphic in Frameworks */,
+				C0E5795B2DF9769F00644AD4 /* font in Frameworks */,
 				C099F0572DB89617004E46B1 /* SwiftfulLoadingIndicators in Frameworks */,
 				C0E0148F2DB9323500EBC6D9 /* FluidGradient in Frameworks */,
 			);
@@ -146,6 +162,8 @@
 			packageProductDependencies = (
 				C099F0562DB89617004E46B1 /* SwiftfulLoadingIndicators */,
 				C0E0148E2DB9323500EBC6D9 /* FluidGradient */,
+				C0E5795A2DF9769F00644AD4 /* font */,
+				C0E579DC2DF9797200644AD4 /* Neumorphic */,
 			);
 			productName = SmartMetro;
 			productReference = C058CB062D927C850081C730 /* SmartMetro.app */;
@@ -232,6 +250,8 @@
 			packageReferences = (
 				C099F0552DB89617004E46B1 /* XCRemoteSwiftPackageReference "SwiftfulLoadingIndicators" */,
 				C0E0148D2DB9323500EBC6D9 /* XCLocalSwiftPackageReference "SmartMetro/FluidGradient-main" */,
+				C0E579592DF9769F00644AD4 /* XCLocalSwiftPackageReference "../../font" */,
+				C0E579DB2DF9797200644AD4 /* XCRemoteSwiftPackageReference "neumorphic" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C058CB072D927C850081C730 /* Products */;
@@ -602,6 +622,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "SmartMetro/FluidGradient-main";
 		};
+		C0E579592DF9769F00644AD4 /* XCLocalSwiftPackageReference "../../font" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../font;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -611,6 +635,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 0.0.4;
+			};
+		};
+		C0E579DB2DF9797200644AD4 /* XCRemoteSwiftPackageReference "neumorphic" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/costachung/neumorphic.git";
+			requirement = {
+				branch = master;
+				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -624,6 +656,15 @@
 		C0E0148E2DB9323500EBC6D9 /* FluidGradient */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FluidGradient;
+		};
+		C0E5795A2DF9769F00644AD4 /* font */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = font;
+		};
+		C0E579DC2DF9797200644AD4 /* Neumorphic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0E579DB2DF9797200644AD4 /* XCRemoteSwiftPackageReference "neumorphic" */;
+			productName = Neumorphic;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -6,9 +6,14 @@
 //
 
 import SwiftUI
+import UIKit
+import font
 
 @main
 struct SmartMetroApp: App {
+    init() {
+        FontLoader.loadRetroGamingFont()
+    }
     var body: some Scene {
         WindowGroup {
             SplashPage()

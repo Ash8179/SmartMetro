@@ -1,6 +1,15 @@
 {
   "pins" : [
     {
+      "identity" : "neumorphic",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/costachung/neumorphic.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "aae74c3e39fba485a540927e8050f288eff1228c"
+      }
+    },
+    {
       "identity" : "swiftfulloadingindicators",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SwiftfulThinking/SwiftfulLoadingIndicators.git",

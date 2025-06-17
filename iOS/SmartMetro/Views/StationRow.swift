@@ -241,7 +241,7 @@ struct StationRow: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // --- 内容视图保持不变 ---
+            // --- 内容视图 ---
             headerView
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
@@ -355,15 +355,19 @@ struct StationRow: View {
                 }
             }) {
                 Text("更多信息")
-                    .font(.caption2)  // 更小，不突出
-                    .foregroundColor(.secondary)  // 淡灰色
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color(.systemGray5))
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .background(
+                        Color(.systemGray5)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            .shadow(color: .white.opacity(0.7), radius: 2, x: -2, y: -2)
+                            .shadow(color: Color.black.opacity(0.05), radius: 2, x: 2, y: 2)
+                    )
             }
             .buttonStyle(PlainButtonStyle())
-            .padding(.top, 4)  // 紧贴卡片
+            .padding(.top, 4)
 
             lineSelectorView
 
@@ -386,40 +390,36 @@ struct StationRow: View {
         .padding(.bottom, 16)
     }
     
-    // MARK: - Line Selector (检查并确保无长动画干扰)
+    // MARK: - Line Selector
     private var lineSelectorView: some View {
         HStack(spacing: 12) {
             ForEach(station.associatedLines, id: \.self) { line in
                 Button(action: {
-                    // 按钮的 Action 不变，它改变 selectedLine
                     if selectedLine == line {
                         selectedLine = nil
                     } else {
                         selectedLine = line
                         loadData(for: line)
                     }
-                    // 注意：这里不需要 withAnimation，因为按钮外观的动画
-                    // 是由 SwiftUI 自动处理的，或者由下面可能存在的 .animation 修饰符处理
                 }) {
                     if let config = lineConfig[line] {
                         Text(config.name)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(selectedLine == line ? .white : config.color)
                             .frame(width: 48, height: 36)
-                            .background(selectedLine == line ? config.color : Color(.systemGray5))
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            // 确保按钮本身应用的是快速动画（如果需要显式动画）
-                            // 如果不加，SwiftUI 会尝试使用默认动画，通常是快速的
-                            // .animation(.easeInOut(duration: 0.2), value: selectedLine == line) // 示例：显式快速动画
+                            .background(
+                                (selectedLine == line ? config.color : Color(.systemGray5))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    .shadow(color: .white.opacity(0.7), radius: 2, x: -2, y: -2)
+                                    .shadow(color: Color.black.opacity(0.05), radius: 2, x: 2, y: 2)
+                            )
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
-                // 确保没有从父视图继承过来的 3 秒动画覆盖按钮的快速动画
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 20)
-        // 不在此处添加基于 selectedLine 的长动画
     }
 
     
@@ -481,6 +481,26 @@ struct StationRow: View {
 
                 Spacer()
 
+                // 判断方向：上行对应 "up"，下行对应 "down"
+                let directionKey = path == "上行" ? "up" : "down"
+
+                // 查找符合条件的最近列车
+                if let latestTrain = trainArrivals.first(where: {
+                    $0.line_id == selectedLine &&
+                    $0.direction.lowercased() == directionKey
+                }) {
+                    Text(latestTrain.description)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                } else {
+                    Text("无列车信息")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                // 拥挤度徽章
                 if let averageLevel = averageCrowdingLevel(for: path) {
                     CrowdLevelBadge(level: averageLevel)
                 }

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import font
 
 struct PassengerRunnerGameView: View {
     // MARK: - State

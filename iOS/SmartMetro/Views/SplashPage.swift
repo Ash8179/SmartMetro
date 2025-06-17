@@ -28,7 +28,6 @@ struct SplashPage: View {
                     Spacer()
                 }
                 .onAppear {
-                    // 你已经在 LocationManager 初始化中自动触发了定位，无需重复调用
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                         withAnimation {
                             showMainView = true

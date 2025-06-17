@@ -19,8 +19,13 @@ class LocationManager: NSObject, ObservableObject {
 
         #if targetEnvironment(simulator)
         // Use mock location when running on Simulator
+        // main area
         let randomLatitude = Double.random(in: 31.200...31.260)
         let randomLongitude = Double.random(in: 121.420...121.500)
+        /*
+        let randomLatitude = Double.random(in: 30.910...31.338)
+        let randomLongitude = Double.random(in: 121.255...121.913)
+         */
         self.location = CLLocationCoordinate2D(latitude: randomLatitude, longitude: randomLongitude)
         print("Simulator: Mock Location Set: \(randomLatitude), \(randomLongitude)")
         #else

@@ -9,6 +9,8 @@ import SwiftUI
 import CoreLocation
 import SwiftfulLoadingIndicators
 import FluidGradient
+import Neumorphic
+
 
 struct ContentView: View {
     @EnvironmentObject var locationManager: LocationManager
@@ -72,17 +74,22 @@ struct ContentView: View {
         }) {
             Label {
                 Text("换乘查询")
-                    .font(.system(size: 16, weight: .semibold))  // Text size adjusted
+                    .font(.system(size: 16, weight: .semibold))
             } icon: {
                 Image(systemName: "arrow.triangle.swap")
-                    .font(.system(size: 22))                    // Icon size enlarged
+                    .font(.system(size: 22))
             }
             .foregroundColor(.blue)
-            .frame(maxWidth: .infinity, minHeight: 52)          // Minimum height increased for visual balance
-            .background(Color(.systemGray6))
-            .cornerRadius(16)                                   // Softer corners
-            .shadow(color: .gray.opacity(0.1), radius: 4, x: 0, y: 3)
+            .frame(maxWidth: .infinity, minHeight: 24)
         }
+        .softButtonStyle(
+            RoundedRectangle(cornerRadius: 16),
+            mainColor: Color(.systemGray6),
+            textColor: Color.blue,
+            darkShadowColor: Color(.gray).opacity(0.2),
+            lightShadowColor: Color(.white).opacity(0.7),
+            pressedEffect: .hard
+        )
     }
 
     // MARK: - Travel Info Button
@@ -92,17 +99,22 @@ struct ContentView: View {
         }) {
             Label {
                 Text("线路查询")
-                    .font(.system(size: 16, weight: .semibold))  // Text size adjusted
+                    .font(.system(size: 16, weight: .semibold))
             } icon: {
                 Image(systemName: "map")
-                    .font(.system(size: 22))                    // Icon size enlarged
+                    .font(.system(size: 22))
             }
             .foregroundColor(.blue)
-            .frame(maxWidth: .infinity, minHeight: 52)          // Minimum height increased
-            .background(Color(.systemGray6))
-            .cornerRadius(16)                                   // Softer corners
-            .shadow(color: .gray.opacity(0.1), radius: 4, x: 0, y: 3)
+            .frame(maxWidth: .infinity, minHeight: 24)
         }
+        .softButtonStyle(
+            RoundedRectangle(cornerRadius: 16),
+            mainColor: Color(.systemGray6),
+            textColor: Color.blue,
+            darkShadowColor: Color(.gray).opacity(0.2),
+            lightShadowColor: Color(.white).opacity(0.7),
+            pressedEffect: .hard
+        )
     }
 
     @ViewBuilder

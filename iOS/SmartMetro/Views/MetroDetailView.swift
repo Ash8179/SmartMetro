@@ -290,6 +290,7 @@ struct CrowdingCard: View {
     }
 }
 
+// MARK: - ArrivalCard: 列车到达信息卡片
 struct ArrivalCard: View {
     let arrivals: [TrainArrival]
 
@@ -321,10 +322,10 @@ struct ArrivalCard: View {
             } else {
                 HStack(spacing: 12) {
                     if let upTrain = upTrain {
-                        arrivalHighlightCard(arrival: upTrain, directionLabel: "上行")
+                        arrivalHighlightCard(arrival: upTrain)
                     }
                     if let downTrain = downTrain {
-                        arrivalHighlightCard(arrival: downTrain, directionLabel: "下行")
+                        arrivalHighlightCard(arrival: downTrain)
                     }
                 }
                 .padding(.vertical, 4)
@@ -341,14 +342,15 @@ struct ArrivalCard: View {
                                     .font(.subheadline)
                                     .monospacedDigit()
 
-                                Spacer()
-
                                 Text("列车 \(arrival.train_number)")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
+                                
+                                Spacer()
 
-                                directionBadge(for: arrival.direction.lowercased() == "up" ? "上行" : "下行")
+                                descriptionBadge(description: arrival.description)
                             }
+                            .padding(.bottom, 8)
 
                             if arrival.id != remainingArrivals.last?.id {
                                 Divider()
@@ -373,7 +375,7 @@ struct ArrivalCard: View {
         )
     }
 
-    private func arrivalHighlightCard(arrival: TrainArrival, directionLabel: String) -> some View {
+    private func arrivalHighlightCard(arrival: TrainArrival) -> some View {
         VStack(alignment: .center, spacing: 4) {
             Text(formatTime(arrival.expected_arrival_time))
                 .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -383,7 +385,8 @@ struct ArrivalCard: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
 
-            directionBadge(for: directionLabel)
+            descriptionBadge(description: arrival.description)
+                .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding()
@@ -400,21 +403,21 @@ struct ArrivalCard: View {
         )
     }
 
-    private func directionBadge(for label: String) -> some View {
-        let color: Color = label == "上行" ? .green : .blue
-        return Text(label)
+    private func descriptionBadge(description: String) -> some View {
+        Text(description)
             .font(.footnote)
+            .multilineTextAlignment(.center)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(color.opacity(0.2))
-            .foregroundColor(color)
+            .background(Color.blue.opacity(0.2))
+            .foregroundColor(.blue)
             .clipShape(Capsule())
     }
 
     private func formatTime(_ timeString: String) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")  // 避免地区时区问题
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)      // 可根据后端设定调整
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
 
         if let date = formatter.date(from: timeString) {

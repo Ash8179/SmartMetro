@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftfulLoadingIndicators
+import Neumorphic
 
 struct StationInfoView: View {
     @State private var firstLastTimes: [FirstLastTimeData] = []
