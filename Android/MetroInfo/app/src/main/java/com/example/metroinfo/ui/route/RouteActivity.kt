@@ -27,14 +27,14 @@ class RouteActivity : AppCompatActivity() {
         setupUI()
         observeViewModel()
         
-        // Get station IDs from intent
-        val startStationId = intent.getIntExtra(EXTRA_START_STATION_ID, -1)
-        val endStationId = intent.getIntExtra(EXTRA_END_STATION_ID, -1)
+        // Get station names from intent
+        val startStationName = intent.getStringExtra("EXTRA_START_STATION_NAME")
+        val endStationName = intent.getStringExtra("EXTRA_END_STATION_NAME")
         
-        if (startStationId != -1 && endStationId != -1) {
-            findRoute(startStationId.toString(), endStationId.toString())
+        if (!startStationName.isNullOrEmpty() && !endStationName.isNullOrEmpty()) {
+            findRoute(startStationName, endStationName)
         } else {
-            showError("Invalid station IDs")
+            showError("Invalid station names")
         }
     }
 
@@ -63,8 +63,8 @@ class RouteActivity : AppCompatActivity() {
         }
     }
 
-    private fun findRoute(startStationId: String, endStationId: String) {
-        viewModel.findRoute(startStationId, endStationId)
+    private fun findRoute(startStationName: String, endStationName: String) {
+        viewModel.findRoute(startStationName, endStationName)
     }
 
     private fun showRouteDetails(routeData: RouteData) {

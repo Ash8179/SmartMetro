@@ -30,7 +30,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
-        val baseUrl = "http://100.79.78.136:5000" // 本地服务器地址和端口
+        // 使用 ngrok 提供的地址
+
+        val baseUrl = "https://4d8c-2001-da8-8002-1bd1-e4a7-4cc7-aad2-937c.ngrok-free.app"
+
         Timber.d("Creating Retrofit with base URL: $baseUrl")
         return Retrofit.Builder()
             .baseUrl(baseUrl)

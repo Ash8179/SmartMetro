@@ -6,5 +6,7 @@ data class RouteRequest(
     @SerializedName("start_station")
     val startStation: String,
     @SerializedName("end_station")
-    val endStation: String
+    val endStation: String,
+    @SerializedName("strategy")
+    val strategy: String = "fastest"
 ) 

@@ -44,7 +44,8 @@ android {
 
 dependencies {
 
-    implementation ("com.google.android.gms:play-services-location:21.0.1")
+    // 移除了Google Play服务依赖，使用Android原生LocationManager
+    // 适用于华为等不支持Google Play服务的设备
 
     implementation ("androidx.work:work-runtime-ktx:2.9.0")
 

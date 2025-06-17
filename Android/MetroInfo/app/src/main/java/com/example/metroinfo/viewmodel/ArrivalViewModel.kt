@@ -2,17 +2,18 @@ package com.example.metroinfo.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.metroinfo.data.repository.MetroRepository
 import com.example.metroinfo.model.ArrivalInfo
 import com.example.metroinfo.model.ArrivalTimeInfo
 import com.example.metroinfo.model.Line
-import com.example.metroinfo.repository.MetroRepository
+import com.example.metroinfo.model.LineStationsResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class ArrivalViewModel @Inject constructor(
@@ -29,6 +30,9 @@ class ArrivalViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    
+    private val _selectedLineId = MutableStateFlow<Int?>(null)
+    val selectedLineId: StateFlow<Int?> = _selectedLineId.asStateFlow()
 
     fun loadLines() {
         viewModelScope.launch {
@@ -36,7 +40,7 @@ class ArrivalViewModel @Inject constructor(
                 _isLoading.value = true
                 val response = repository.getLines()
                 if (response.isSuccessful) {
-                    val lines = response.body() ?: emptyList()
+                    val lines: List<Line> = response.body() ?: emptyList()
                     _lines.value = lines
                     if (lines.isEmpty()) {
                         _error.value = "No lines available"
@@ -53,27 +57,44 @@ class ArrivalViewModel @Inject constructor(
     }
 
     fun selectLine(lineId: Int) {
+        _selectedLineId.value = lineId
+        
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 val response = repository.getLineStationsArrivalTime(lineId)
                 if (response.isSuccessful) {
-                    val arrivalInfos = response.body() ?: emptyList()
-                    _stations.value = arrivalInfos.map { arrivalInfo ->
-                        ArrivalTimeInfo(
-                            lineId = arrivalInfo.lineId,
-                            stationId = arrivalInfo.stationId,
-                            stationName = arrivalInfo.stationName,
-                            lineName = arrivalInfo.lineName,
-                            directionDesc = arrivalInfo.directionDesc,
-                            firstArrivalTime = arrivalInfo.firstArrivalTime,
-                            minutesRemaining = arrivalInfo.minutesRemaining
-                        )
+                    val lineStationsResponse: LineStationsResponse? = response.body()
+                    if (lineStationsResponse != null) {
+                        // 将 LineStationInfo 转换为 ArrivalTimeInfo
+                        val arrivalInfos = lineStationsResponse.stations.map { station ->
+                            ArrivalTimeInfo(
+                                lineId = station.lineNumber,
+                                stationId = station.stationId.toString(),
+                                stationName = station.stationName,
+                                lineName = "${station.lineNumber}号线",
+                                directionDesc = station.directionInfo ?: "上行", // 使用实际的方向信息
+                                firstArrivalTime = station.firstTrain,
+                                minutesRemaining = station.minutesRemaining,
+                                isOperating = station.isOperating,
+                                serviceStatus = station.serviceStatus,
+                                nextServiceTime = station.nextServiceTime,
+                                nextArrival = station.nextArrival,
+                                upboundFirstTrain = station.upboundFirstTrain,
+                                downboundFirstTrain = station.downboundFirstTrain,
+                                directionInfo = station.directionInfo
+                            )
+                        }
+                        _stations.value = arrivalInfos
+                        Timber.d("Loaded ${arrivalInfos.size} stations for line $lineId")
+                    } else {
+                        _error.value = "No data received"
                     }
                 } else {
                     _error.value = "Failed to load stations: ${response.code()}"
                 }
             } catch (e: Exception) {
+                Timber.e(e, "Error loading line stations")
                 _error.value = e.message ?: "Unknown error"
             } finally {
                 _isLoading.value = false
@@ -87,18 +108,8 @@ class ArrivalViewModel @Inject constructor(
             try {
                 val response = repository.getStationArrivalTime(stationId.toString())
                 if (response.isSuccessful) {
-                    val arrivalInfos = response.body() ?: emptyList()
-                    _stations.value = arrivalInfos.map { arrivalInfo ->
-                        ArrivalTimeInfo(
-                            lineId = arrivalInfo.lineId,
-                            stationId = arrivalInfo.stationId,
-                            stationName = arrivalInfo.stationName,
-                            lineName = arrivalInfo.lineName,
-                            directionDesc = arrivalInfo.directionDesc,
-                            firstArrivalTime = arrivalInfo.firstArrivalTime,
-                            minutesRemaining = arrivalInfo.minutesRemaining
-                        )
-                    }
+                    val arrivalInfos: List<ArrivalTimeInfo> = response.body() ?: emptyList()
+                    _stations.value = arrivalInfos
                 } else {
                     _error.value = "Failed to load arrival info: ${response.code()}"
                 }
@@ -117,18 +128,8 @@ class ArrivalViewModel @Inject constructor(
                 _isLoading.value = true
                 val response = repository.searchStations(query)
                 if (response.isSuccessful) {
-                    val arrivalInfos = response.body() ?: emptyList()
-                    _stations.value = arrivalInfos.map { arrivalInfo ->
-                        ArrivalTimeInfo(
-                            lineId = arrivalInfo.lineId,
-                            stationId = arrivalInfo.stationId,
-                            stationName = arrivalInfo.stationName,
-                            lineName = arrivalInfo.lineName,
-                            directionDesc = arrivalInfo.directionDesc,
-                            firstArrivalTime = arrivalInfo.firstArrivalTime,
-                            minutesRemaining = arrivalInfo.minutesRemaining
-                        )
-                    }
+                    val arrivalInfos: List<ArrivalTimeInfo> = response.body() ?: emptyList()
+                    _stations.value = arrivalInfos
                     if (arrivalInfos.isEmpty()) {
                         _error.value = "No stations found"
                     }

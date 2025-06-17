@@ -12,6 +12,9 @@ class LineAdapter(
     private val onLineClick: (Line) -> Unit
 ) : ListAdapter<Line, LineAdapter.ViewHolder>(LineDiffCallback()) {
 
+    // 有效的上海地铁线路ID列表
+    private val validLineIds = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 17, 18)
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemLineBinding.inflate(
             LayoutInflater.from(parent.context),
@@ -23,6 +26,14 @@ class LineAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bind(getItem(position))
+    }
+
+    // 过滤掉无效的线路ID
+    override fun submitList(list: List<Line>?) {
+        val filteredList = list?.filter { line -> 
+            validLineIds.contains(line.lineId) 
+        }
+        super.submitList(filteredList)
     }
 
     inner class ViewHolder(
@@ -39,8 +50,16 @@ class LineAdapter(
         }
 
         fun bind(line: Line) {
-            binding.lineName.text = "${line.lineId}号线"
-            binding.lineNameEn.text = "Line ${line.lineId}"
+            // 格式化线路名称
+            val formattedLineId = if (validLineIds.contains(line.lineId)) {
+                line.lineId.toString()
+            } else {
+                "未知"
+            }
+            
+            binding.lineName.text = "${formattedLineId}号线"
+            binding.lineNameEn.text = "Line ${formattedLineId}"
+            
             binding.root.setBackgroundColor(
                 when (line.lineId) {
                     1 -> android.graphics.Color.parseColor("#E4002B") // 1号线红色
@@ -56,8 +75,6 @@ class LineAdapter(
                     11 -> android.graphics.Color.parseColor("#800000") // 11号线棕色
                     12 -> android.graphics.Color.parseColor("#007B5F") // 12号线深绿
                     13 -> android.graphics.Color.parseColor("#EF95CF") // 13号线粉红
-                    14 -> android.graphics.Color.parseColor("#827A04") // 14号线橄榄
-                    15 -> android.graphics.Color.parseColor("#653279") // 15号线深紫
                     16 -> android.graphics.Color.parseColor("#45B97C") // 16号线青绿
                     17 -> android.graphics.Color.parseColor("#0066B3") // 17号线深蓝
                     18 -> android.graphics.Color.parseColor("#D6A461") // 18号线金色

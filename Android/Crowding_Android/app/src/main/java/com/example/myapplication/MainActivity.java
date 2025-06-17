@@ -54,16 +54,37 @@ public class MainActivity extends AppCompatActivity {
         String lineNumber = etLineNumber.getText().toString();
         String carriage = etCarriage.getText().toString();
 
-        // 模拟器访问本地后端
-        String url = "http://10.0.2.2:5001/api/crowding?line_id=" + lineId +
+        // API服务器地址
+        // 模拟器使用10.0.2.2访问主机的5001端口
+        // 真机测试请修改为实际的服务器IP地址
+        String serverIp = "10.0.2.2"; // 可以根据需要修改为实际的服务器IP
+        
+        String url = "http://" + serverIp + ":5001/api/crowding?line_id=" + lineId +
                 "&line_number=" + lineNumber +
                 "&line_carriage=" + carriage;
 
+        // 显示正在查询的提示
+        tvResult.setText("正在查询...");
+        
         StringRequest request = new StringRequest(
                 Request.Method.GET, url,
                 response -> {
                     try {
                         JSONObject json = new JSONObject(response);
+                        
+                        // 先检查API返回状态
+                        String status = json.getString("status");
+                        if (!"success".equals(status)) {
+                            tvResult.setText("查询失败: " + json.optString("message", "未知错误"));
+                            return;
+                        }
+                        
+                        // 检查data是否为null
+                        if (json.isNull("data")) {
+                            tvResult.setText("未找到匹配的数据");
+                            return;
+                        }
+                        
                         JSONObject data = json.getJSONObject("data");
                         String result = "线路ID: " + data.getString("line_id") + "\n" +
                                 "车次: " + data.getString("line_number") + "\n" +
@@ -71,12 +92,24 @@ public class MainActivity extends AppCompatActivity {
                                 "人数: " + data.getInt("person_num") + "\n" +
                                 "拥挤度: " + getCrowdLevel(data.getInt("crowd_level"));
                         tvResult.setText(result);
-                    } catch (Exception e) {
+                    } catch (JSONException e) {
                         tvResult.setText("解析错误: " + e.getMessage());
+                        e.printStackTrace(); // 在日志中打印详细错误
                     }
                 },
-                error -> tvResult.setText("请求失败: " + error.getMessage())
+                error -> {
+                    tvResult.setText("请求失败: " + error.getMessage());
+                    error.printStackTrace(); // 在日志中打印详细错误
+                }
         );
+        
+        // 设置请求超时时间
+        request.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(
+                10000, // 超时时间10秒
+                1,     // 最大重试次数
+                1.0f   // 重试倍增因子
+        ));
+        
         Volley.newRequestQueue(this).add(request);
     }
 

@@ -28,5 +28,11 @@ data class ArrivalInfo(
     val lineName: String,
     
     @SerializedName("arrival_time")
-    val arrivalTime: String
+    val arrivalTime: String,
+    
+    @SerializedName("first_train")
+    val firstTrain: String? = null,
+    
+    @SerializedName("last_train")
+    val lastTrain: String? = null
 ) 

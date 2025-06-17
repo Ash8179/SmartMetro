@@ -143,19 +143,26 @@ def register_routes(app, station_graph):
             # 获取该线路所有站点的首班车时间
             query = """
                 SELECT 
-                    ls.line_id,
-                    ls.station_id,
-                    ls.station_name,
-                    ls.direction_desc,
-                    ls.sequence,
+                    s.line as line_id,
+                    s.station_id,
+                    s.station_name,
+                    s.station_order,
+                    fta.direction_desc,
                     TIME_FORMAT(fta.first_arrival_time, '%H:%i:%s') as first_arrival_time,
-                    CONCAT(ls.line_id, '号线') as line_name
-                FROM line_station_sequence ls
-                LEFT JOIN first_train_arrival fta ON ls.line_id = fta.line_id 
-                    AND ls.station_id = fta.station_id
-                    AND ls.direction_desc = fta.direction_desc
-                WHERE ls.line_id = %(line_id)s
-                ORDER BY ls.sequence
+                    CONCAT(s.line, '号线') as line_name
+                FROM (
+                    SELECT 
+                        line,
+                        station_id,
+                        name_cn as station_name,
+                        path_id,
+                        station_order
+                    FROM all_stations
+                    WHERE line = %(line_id)s
+                ) s
+                LEFT JOIN first_train_arrival fta ON s.line = fta.line_id 
+                    AND s.station_id = fta.station_id
+                ORDER BY s.station_order
             """
             cursor.execute(query, {'line_id': line_id})
 

@@ -14,6 +14,28 @@
 
     <queries>
         <package android:name="com.example.metroinfo" />
+        
+        <!-- 地图应用包查询权限 (Android 11+) -->
+        <!-- 高德地图 -->
+        <package android:name="com.autonavi.minimap" />
+        <package android:name="com.autonavi.amap" />
+        <package android:name="com.amap.android.ams" />
+        <package android:name="com.autonavi.xmgd.navigator" />
+        
+        <!-- 百度地图 -->
+        <package android:name="com.baidu.BaiduMap" />
+        
+        <!-- 腾讯地图 -->
+        <package android:name="com.tencent.map" />
+        
+        <!-- Google地图 -->
+        <package android:name="com.google.android.apps.maps" />
+        
+        <!-- 通用地图Intent查询 -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
     </queries>
 
     <application
@@ -30,6 +52,11 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31"
         tools:ignore="GoogleAppIndexingWarning">
+
+        <!-- Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="YOUR_API_KEY" />
 
         <activity
             android:name=".ui.splash.SplashActivity"
@@ -58,6 +85,16 @@
 
         <activity
             android:name=".ui.crowding.CrowdingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MetroInfo" />
+
+        <activity
+            android:name=".ui.station.StationDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MetroInfo" />
+
+        <activity
+            android:name=".ui.station.StationEntrancesActivity"
             android:exported="false"
             android:theme="@style/Theme.MetroInfo" />
 

@@ -25,5 +25,26 @@ data class ArrivalTimeInfo(
     val minutesRemaining: Int,
     
     @SerializedName("is_transfer")
-    val isTransfer: Boolean = false
+    val isTransfer: Boolean = false,
+    
+    @SerializedName("is_operating")
+    val isOperating: Boolean? = true,
+    
+    @SerializedName("service_status")
+    val serviceStatus: String? = null,
+    
+    @SerializedName("next_service_time")
+    val nextServiceTime: String? = null,
+    
+    @SerializedName("next_arrival")
+    val nextArrival: String? = null,
+    
+    @SerializedName("upbound_first_train")
+    val upboundFirstTrain: String? = null,
+    
+    @SerializedName("downbound_first_train")
+    val downboundFirstTrain: String? = null,
+    
+    @SerializedName("direction_info")
+    val directionInfo: String? = null
 ) 

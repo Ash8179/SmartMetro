@@ -9,4 +9,10 @@
     <string name="total_time">总时间: %1$d分钟</string>
     <string name="transfer_count">换乘次数: %1$d</string>
     <string name="error_getting_route">获取路线失败</string>
+    
+    <!-- 新增的字符串资源 -->
+    <string name="error_opening_station_detail">打开站点详情失败</string>
+    <string name="error_no_map_app">未找到地图应用</string>
+    <string name="error_no_location">站点位置信息不可用</string>
+    <string name="error_opening_navigation">打开导航失败</string>
 </resources>

@@ -2,11 +2,12 @@ package com.example.metroinfo.ui.nearby
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.location.Location
+
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -14,11 +15,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.metroinfo.databinding.FragmentNearbyMetroBinding
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import com.example.metroinfo.utils.LocationHelper
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import com.example.metroinfo.data.model.NearbyStation
 
@@ -27,9 +26,20 @@ class NearbyMetroFragment : Fragment() {
     private var _binding: FragmentNearbyMetroBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: NearbyMetroViewModel by viewModels()
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private val viewModel: NearbyStationsViewModel by viewModels()
+    private lateinit var locationHelper: LocationHelper
     private val adapter = NearbyMetroAdapter()
+    
+    // 定义权限请求启动器
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                getLocation()
+            } else {
+                // 即使没有位置权限，也加载默认的附近站点
+                viewModel.loadNearbyStations()
+            }
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,7 +53,7 @@ class NearbyMetroFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
+        locationHelper = LocationHelper(requireContext())
 
         binding.nearbyMetroList.layoutManager = LinearLayoutManager(context)
         binding.nearbyMetroList.adapter = adapter
@@ -52,15 +62,24 @@ class NearbyMetroFragment : Fragment() {
             findNavController().navigateUp()
         }
 
+        // 观察 ViewModel 状态
         lifecycleScope.launch {
-            (viewModel.isLoading as Flow<Boolean>).collect { isLoading ->
+            viewModel.isLoading.collectLatest { isLoading ->
                 binding.progressIndicator.visibility = if (isLoading) View.VISIBLE else View.GONE
             }
         }
 
         lifecycleScope.launch {
-            (viewModel.nearbyStations as Flow<List<NearbyStation>>).collect { stations ->
+            viewModel.nearbyStations.collectLatest { stations ->
                 adapter.submitList(stations)
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.error.collectLatest { error ->
+                error?.let {
+                    // 可以在这里显示错误信息
+                }
             }
         }
 
@@ -73,10 +92,8 @@ class NearbyMetroFragment : Fragment() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            requestPermissions(
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
+            // 使用新的权限请求API
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         } else {
             getLocation()
         }
@@ -88,35 +105,29 @@ class NearbyMetroFragment : Fragment() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            fusedLocationClient.lastLocation
-                .addOnSuccessListener { location: Location? ->
-                    location?.let {
-                        viewModel.loadNearbyStations(it)
+            lifecycleScope.launch {
+                try {
+                    val locationResult = locationHelper.getCurrentLocation(1500)
+                    if (locationResult != null) {
+                        // 获取到位置，可以根据位置信息加载附近站点
+                        viewModel.loadNearbyStationsWithLocation(locationResult.latitude, locationResult.longitude)
+                    } else {
+                        // 获取位置失败，加载默认的附近站点
+                        viewModel.loadNearbyStations()
                     }
-                }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        when (requestCode) {
-            LOCATION_PERMISSION_REQUEST_CODE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    getLocation()
+                } catch (e: Exception) {
+                    // 定位异常，加载默认的附近站点
+                    viewModel.loadNearbyStations()
                 }
             }
+        } else {
+            // 没有权限，加载默认的附近站点
+            viewModel.loadNearbyStations()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    companion object {
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
     }
 } 

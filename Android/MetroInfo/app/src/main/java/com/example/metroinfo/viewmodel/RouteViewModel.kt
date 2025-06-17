@@ -25,7 +25,7 @@ class RouteViewModel @Inject constructor(
     private val _errorMessage = MutableLiveData<String?>()
     val errorMessage: LiveData<String?> = _errorMessage
 
-    fun findRoute(fromStation: String, toStation: String) {
+    fun findRoute(fromStation: String, toStation: String, strategy: String = "fastest") {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
@@ -35,7 +35,12 @@ class RouteViewModel @Inject constructor(
                     return@launch
                 }
 
-                val request = RouteRequest(startStation = fromStation, endStation = toStation)
+                val request = RouteRequest(
+                    startStation = fromStation, 
+                    endStation = toStation,
+                    strategy = strategy
+                )
+                
                 val response = apiService.findRoute(request)
                 
                 if (response.isSuccessful) {

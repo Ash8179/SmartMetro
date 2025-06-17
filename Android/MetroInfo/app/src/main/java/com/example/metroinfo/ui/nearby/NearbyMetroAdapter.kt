@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.metroinfo.data.model.NearbyStation
 import com.example.metroinfo.databinding.ItemLineTagBinding
 import com.example.metroinfo.databinding.ItemNearbyMetroBinding
+import com.example.metroinfo.utils.MetroLineColors
 
 class NearbyMetroAdapter : ListAdapter<NearbyStation, NearbyMetroAdapter.ViewHolder>(NearbyStationDiffCallback()) {
 
@@ -26,9 +27,9 @@ class NearbyMetroAdapter : ListAdapter<NearbyStation, NearbyMetroAdapter.ViewHol
 
     class ViewHolder(private val binding: ItemNearbyMetroBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(station: NearbyStation) {
-            binding.stationName.text = station.name
-            binding.stationNameEn.text = station.nameEn
-            binding.distance.text = String.format("%.1f米", station.distance * 1000)
+            binding.stationName.text = station.stationName
+            binding.stationNameEn.text = station.stationNameEn
+            binding.distance.text = String.format("%.1f米", station.distance.toDouble())
 
             binding.lineTagsContainer.removeAllViews()
             station.lines.forEach { lineId ->
@@ -39,29 +40,14 @@ class NearbyMetroAdapter : ListAdapter<NearbyStation, NearbyMetroAdapter.ViewHol
                 )
                 lineBinding.lineNumber.text = lineId.toString()
                 lineBinding.lineTextEn.text = "Line $lineId"
-                lineBinding.root.setBackgroundColor(
-                    when (lineId) {
-                        1 -> android.graphics.Color.parseColor("#E4002B") // 1号线红色
-                        2 -> android.graphics.Color.parseColor("#97C024") // 2号线绿色
-                        3 -> android.graphics.Color.parseColor("#FFD100") // 3号线黄色
-                        4 -> android.graphics.Color.parseColor("#5C2D91") // 4号线紫色
-                        5 -> android.graphics.Color.parseColor("#A064A3") // 5号线紫色
-                        6 -> android.graphics.Color.parseColor("#D9027D") // 6号线粉色
-                        7 -> android.graphics.Color.parseColor("#F37B20") // 7号线橙色
-                        8 -> android.graphics.Color.parseColor("#00A1E0") // 8号线蓝色
-                        9 -> android.graphics.Color.parseColor("#71C5E8") // 9号线浅蓝
-                        10 -> android.graphics.Color.parseColor("#C4D600") // 10号线浅绿
-                        11 -> android.graphics.Color.parseColor("#800000") // 11号线棕色
-                        12 -> android.graphics.Color.parseColor("#007B5F") // 12号线深绿
-                        13 -> android.graphics.Color.parseColor("#EF95CF") // 13号线粉红
-                        14 -> android.graphics.Color.parseColor("#827A04") // 14号线橄榄
-                        15 -> android.graphics.Color.parseColor("#653279") // 15号线深紫
-                        16 -> android.graphics.Color.parseColor("#45B97C") // 16号线青绿
-                        17 -> android.graphics.Color.parseColor("#0066B3") // 17号线深蓝
-                        18 -> android.graphics.Color.parseColor("#D6A461") // 18号线金色
-                        else -> android.graphics.Color.GRAY
-                    }
-                )
+                
+                val lineColor = MetroLineColors.getLineColor(lineId)
+                lineBinding.root.setBackgroundColor(lineColor)
+                
+                // 设置文字颜色
+                val textColor = MetroLineColors.getTextColor(lineColor)
+                lineBinding.lineNumber.setTextColor(textColor)
+                lineBinding.lineTextEn.setTextColor(textColor)
                 binding.lineTagsContainer.addView(lineBinding.root)
             }
         }
@@ -69,7 +55,7 @@ class NearbyMetroAdapter : ListAdapter<NearbyStation, NearbyMetroAdapter.ViewHol
 
     private class NearbyStationDiffCallback : DiffUtil.ItemCallback<NearbyStation>() {
         override fun areItemsTheSame(oldItem: NearbyStation, newItem: NearbyStation): Boolean {
-            return oldItem.id == newItem.id
+            return oldItem.stationId == newItem.stationId
         }
 
         override fun areContentsTheSame(oldItem: NearbyStation, newItem: NearbyStation): Boolean {

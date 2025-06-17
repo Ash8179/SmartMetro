@@ -1,6 +1,9 @@
 package com.example.metroinfo.network
 
 import com.example.metroinfo.data.model.NearbyStation
+import com.example.metroinfo.data.model.NearbyStationsResponse
+import com.example.metroinfo.data.model.StationDetailResponse
+import com.example.metroinfo.data.model.StationEntrancesResponse
 import com.example.metroinfo.model.ArrivalTimeInfo
 import com.example.metroinfo.model.ArrivalTimeResponse
 import com.example.metroinfo.model.BestRouteResponse
@@ -10,20 +13,31 @@ import com.example.metroinfo.model.Line
 import com.example.metroinfo.model.ArrivalInfo
 import com.example.metroinfo.model.RouteRequest
 import com.example.metroinfo.model.LineInfo
-import com.example.metroinfo.model.StationInfo
+import com.example.metroinfo.model.LineStationsResponse
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Body
 import retrofit2.http.Query
 import retrofit2.http.Path
+import javax.inject.Singleton
 
+@Singleton
 interface ApiService {
-    @GET("api/nearby-stations")
-    suspend fun getNearbyStations(
+    @GET("api/metro/stations/nearby")
+    suspend fun getNearbyStations(): Response<NearbyStationsResponse>
+    
+    @GET("api/metro/stations/nearby")
+    suspend fun getNearbyStationsWithLocation(
         @Query("latitude") latitude: Double,
         @Query("longitude") longitude: Double
-    ): List<NearbyStation>
+    ): Response<NearbyStationsResponse>
+
+    @GET("api/metro/station/{stationId}/detail")
+    suspend fun getStationDetail(@Path("stationId") stationId: Int): Response<StationDetailResponse>
+
+    @GET("api/metro/station/{stationId}/entrances")
+    suspend fun getStationEntrances(@Path("stationId") stationId: Int): Response<StationEntrancesResponse>
 
     @GET("api/metro/nearest-stations")
     suspend fun getNearestStations(
@@ -65,7 +79,7 @@ interface ApiService {
     suspend fun getStationArrivalTime(@Path("stationId") stationId: String): Response<List<ArrivalTimeInfo>>
     
     @GET("api/arrival-time/line/{lineId}")
-    suspend fun getLineStationsArrivalTime(@Path("lineId") lineId: Int): Response<List<ArrivalTimeInfo>>
+    suspend fun getLineStationsArrivalTime(@Path("lineId") lineId: Int): Response<LineStationsResponse>
     
     @GET("api/arrival-time/search")
     suspend fun searchStations(@Query("q") query: String): Response<List<ArrivalTimeInfo>>
