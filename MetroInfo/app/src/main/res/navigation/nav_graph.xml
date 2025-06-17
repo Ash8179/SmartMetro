@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/mainFragment">
+
+    <fragment
+        android:id="@+id/mainFragment"
+        android:name="com.example.metroinfo.ui.main.MainFragment"
+        android:label="MainFragment">
+        <action
+            android:id="@+id/action_mainFragment_to_nearbyMetroFragment"
+            app:destination="@id/nearbyMetroFragment" />
+        <action
+            android:id="@+id/action_mainFragment_to_lineListFragment"
+            app:destination="@id/lineListFragment" />
+        <action
+            android:id="@+id/action_mainFragment_to_routeFragment"
+            app:destination="@id/routeFragment" />
+        <action
+            android:id="@+id/action_mainFragment_to_nearbyStationsFragment"
+            app:destination="@id/nearbyStationsFragment" />
+        <action
+            android:id="@+id/action_mainFragment_to_arrivalTimeFragment"
+            app:destination="@id/arrivalTimeFragment" />
+        <action
+            android:id="@+id/action_mainFragment_to_stationDetailFragment"
+            app:destination="@id/stationDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nearbyMetroFragment"
+        android:name="com.example.metroinfo.ui.nearby.NearbyMetroFragment"
+        android:label="附近地铁站"
+        tools:layout="@layout/fragment_nearby_metro" />
+
+    <fragment
+        android:id="@+id/arrivalTimeFragment"
+        android:name="com.example.metroinfo.ui.arrival.ArrivalTimeFragment"
+        android:label="列车到达时间"
+        tools:layout="@layout/fragment_arrival_time">
+        <action
+            android:id="@+id/action_arrivalTime_to_stationDetail"
+            app:destination="@id/stationDetailFragment">
+            <argument
+                android:name="stationId"
+                app:argType="integer" />
+        </action>
+    </fragment>
+
+    <fragment
+        android:id="@+id/routeFragment"
+        android:name="com.example.metroinfo.ui.route.RouteFragment"
+        android:label="路线规划"
+        tools:layout="@layout/fragment_route">
+        <action
+            android:id="@+id/action_routeFragment_to_routeDetailFragment"
+            app:destination="@id/routeDetailFragment">
+            <argument
+                android:name="startStation"
+                app:argType="string" />
+            <argument
+                android:name="endStation"
+                app:argType="string" />
+        </action>
+    </fragment>
+
+    <fragment
+        android:id="@+id/routeDetailFragment"
+        android:name="com.example.metroinfo.ui.route.RouteDetailFragment"
+        android:label="路线详情"
+        tools:layout="@layout/fragment_route_detail">
+        <argument
+            android:name="startStation"
+            app:argType="string" />
+        <argument
+            android:name="endStation"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nearbyStationsFragment"
+        android:name="com.example.metroinfo.ui.nearby.NearbyStationsFragment"
+        android:label="附近站点"
+        tools:layout="@layout/fragment_nearby_stations">
+        <action
+            android:id="@+id/action_nearbyStationsFragment_to_routeFragment"
+            app:destination="@id/routeFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/lineListFragment"
+        android:name="com.example.metroinfo.ui.line.LineListFragment"
+        android:label="Lines">
+        <action
+            android:id="@+id/action_lineList_to_lineDetail"
+            app:destination="@id/lineDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/lineDetailFragment"
+        android:name="com.example.metroinfo.ui.line.LineDetailFragment"
+        android:label="Line Detail">
+        <argument
+            android:name="lineId"
+            app:argType="integer" />
+        <action
+            android:id="@+id/action_lineDetail_to_stationDetail"
+            app:destination="@id/stationDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/stationDetailFragment"
+        android:name="com.example.metroinfo.ui.station.StationDetailFragment"
+        android:label="Station Detail">
+        <argument
+            android:name="stationId"
+            app:argType="integer" />
+    </fragment>
+
+</navigation> 
